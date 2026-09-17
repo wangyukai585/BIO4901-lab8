@@ -1,0 +1,10 @@
+{
+  "git_commit": "251c90297b735be2ffa426ef6ac473e68fa713e8",
+  "python": "3.11.14 (main, Feb 12 2026, 00:42:50) [Clang 21.1.4 ]",
+  "platform": "Linux-5.15.0-190-generic-x86_64-with-glibc2.35",
+  "torch": "2.6.0+cu124",
+  "bitsandbytes": "0.45.5",
+  "gpu": "NVIDIA GeForce RTX 3080 Ti",
+  "vram_gib": 11.6334228515625,
+  "bf16": true
+}

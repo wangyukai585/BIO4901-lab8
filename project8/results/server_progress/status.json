@@ -1,0 +1,10 @@
+{
+  "status": "RUNNING",
+  "started_at": "2026-09-17T21:59:20+08:00",
+  "planned_epochs": 10,
+  "train_n": 11085,
+  "test_n": 2773,
+  "model": "facebook/esm2_t30_150M_UR50D",
+  "cuda_bf16_optimizer_preflight_passed": true,
+  "full_result_report_pending": true
+}

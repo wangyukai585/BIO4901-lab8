@@ -62,3 +62,17 @@ This is a curated reproducibility log, not a complete terminal transcript.
    uv pip compile project8/requirements.txt --python-version 3.11 --python-platform x86_64-unknown-linux-gnu --output-file project8/requirements-lock-linux.txt --quiet
    Linux resolution succeeded; no claim of Linux installation/CUDA execution.
    Final smoke DAG completed 8/8 nodes with no warnings/errors; tests 9/9 passed.
+
+9. Authorized server run, 2026-09-17
+   Pushed local main to GitHub after user authorization.
+   Server GitHub HTTP/2 clone failed; transferred a git bundle of the identical pushed commit.
+   Existing SSH key authentication succeeded. No password stored.
+   User requested local network forwarding; stopped initial accelerator attempt and used SSH reverse forwarding to the Mac proxy, loopback binding only.
+   Installed Python 3.11.14 and requirements-lock-linux.txt through the forwarded network.
+   Copied raw data/model cache; SHA-256 matched local originals exactly.
+   Actual hardware: RTX 3080 Ti, advertised 12 GiB (not 3090 Ti).
+   Activated server venv, HF_HUB_OFFLINE=1, HF_HOME pointing to transferred cache.
+   Detached tmux session runs scripts/run_server.sh. Formal run started 2026-09-17 21:59:20 +08:00.
+   CUDA bf16 + AdamW8bit preflight with batch 4 / 512 residues passed; peak 1844.99 MiB.
+   LoRA formal training entered epoch 1/10 and nonzero adapter gradients passed.
+   Results remain pending; do not interpret existing smoke PDF as full experiment output.

@@ -2,6 +2,12 @@
 
 **这些结果是在本地小规模 subset 冒烟测试基础上生成的代码，完整实验结果将在 GPU 服务器运行后更新。** 当前所有性能图为 `[PLACEHOLDER - 待服务器全量运行后替换]`；Full FT 仅一个 batch，不能用于判断方法排名。
 
+## 服务器运行进度
+
+2026-09-17 21:59 已在 **RTX 3080 Ti 12 GiB** 启动全量运行，保持完整数据与 10 epochs。CUDA bf16、bitsandbytes 0.45.5 与 Full FT 最大配置预检已实测通过：batch 4、512 残基、未冻结前层，PyTorch 峰值分配约 1.80 GiB。训练在 tmux 后台接续运行；当前仓库主结果表与 PDF 仍是此前的冒烟占位，待四阶段完成后统一更新。
+
+已增加各类 F1、长度/端点鲁棒性与配对 CI 图；正式报告使用 `codes/10_write_course_report.py --results_dir results/full_run` 生成更简洁的中文图文版本。硬件与预检证据见 `results/server_progress/`、`results/server_probe/`。
+
 ## 项目与数据
 
 本仓库根目录内的 `project8/` 是课程提交项目。所有以下命令均在 `project8/` 执行。固定模型为 `facebook/esm2_t30_150M_UR50D`，不可变 revision `a695f6045e2e32885fa60af20c13cb35398ce30c`。
@@ -107,6 +113,6 @@ python -m pytest tests -q
 snakemake -s scripts/Snakefile --cores 1 --config subset=False -n
 ```
 
-已实测：MPS ESM bf16 forward/backward、Frozen、Linear/LoRA 两轮、Full FT 单 batch、checkpoint 参数恢复、梯度、完整 Snakemake smoke DAG、统计/图表与 PDF。CUDA/bitsandbytes 内核和 CUDA OOM 情况尚待服务器实测；降级顺序以测试覆盖。
+已实测：MPS ESM bf16 forward/backward、Frozen、Linear/LoRA 两轮、Full FT 单 batch、checkpoint 参数恢复、梯度、完整 Snakemake smoke DAG、统计/图表与 PDF。CUDA/bitsandbytes 内核与预检已在 RTX 3080 Ti 实测通过；真实 OOM 未出现，降级顺序以注入异常的测试覆盖。
 
 `.gitignore` 排除 raw/processed、embedding、权重、虚拟环境和工具安装；保留小 checkpoint JSON、CSV 与图。仓库只完成本地分模块提交，无 remote/push 操作。若 Mac 系统 Git 提示 Xcode 许可，可在已安装 Command Line Tools 的本机使用 `DEVELOPER_DIR=/Library/Developer/CommandLineTools git ...`。推送前在仓库根检查 `git status`。
