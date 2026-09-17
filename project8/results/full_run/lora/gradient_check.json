@@ -1,0 +1,6 @@
+{
+  "nonzero_tensor_count": 62,
+  "tensor_count": 122,
+  "lora_nonzero": 60,
+  "all_finite": true
+}

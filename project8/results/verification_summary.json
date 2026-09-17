@@ -14,12 +14,33 @@
     "lora_epochs": 2,
     "full_optimizer_steps": 1
   },
-  "pytest_passed": 9,
+  "pytest_passed": 10,
   "snakemake_jobs_passed": 8,
   "cpu_resume_bitwise_verified": true,
-  "pdf_pages": 8,
-  "pdf_visual_review": "all final pages inspected",
-  "cuda_kernel_validation": "pending on user server",
-  "linux_lock_resolution": "passed, not installed",
-  "raw_data_committed": false
+  "pdf_pages": 7,
+  "pdf_visual_review": "formal full-run report; all final pages inspected",
+  "cuda_kernel_validation": "passed on RTX 3080 Ti with torch 2.6.0+cu124",
+  "linux_lock_resolution": "installed and full experiment completed",
+  "raw_data_committed": false,
+  "full_run": {
+    "status": "FULL_RUN",
+    "train_n": 11085,
+    "test_n": 2773,
+    "training_epochs": 10,
+    "strategies": [
+      "frozen",
+      "linear",
+      "lora",
+      "full"
+    ],
+    "same_test_ids": true,
+    "limited_steps": false,
+    "lora_full_optimizer": "AdamW8bit",
+    "linear_optimizer": "AdamW",
+    "precision": "torch.bfloat16",
+    "full_peak_cuda_mib": 2167.1279296875,
+    "oom_fallback_triggered": false,
+    "bootstrap_resamples": 1000,
+    "snakemake_jobs_passed": 7
+  }
 }

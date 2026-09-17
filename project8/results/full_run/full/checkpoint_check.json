@@ -1,0 +1,6 @@
+{
+  "roundtrip": true,
+  "initial_fixed_batch_loss": 2.28515625,
+  "final_fixed_batch_loss": 0.01934291422367096,
+  "loss_decreased": true
+}

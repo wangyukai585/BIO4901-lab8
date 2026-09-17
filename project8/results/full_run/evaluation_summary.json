@@ -1,0 +1,14 @@
+{
+  "n_bootstrap": 1000,
+  "ci": "95% percentile, paired stratified sequence bootstrap",
+  "seed": 42,
+  "status": "FULL_RUN",
+  "limitations": [
+    "Bootstrap is conditional on the observed test set/class counts and one training seed; not independent family/cluster resampling.",
+    "No supplied homology cluster IDs: sequence-level CI may be optimistic.",
+    "Smoke/one-batch full-FT results are pipeline checks, not strategy rankings.",
+    "No test-based hyperparameter selection or temperature fitting."
+  ],
+  "same_preprocessing": true,
+  "robustness": "Replace up to 10 residues at EACH terminus with X after truncation; synthetic diagnostic, not a validated biological perturbation."
+}

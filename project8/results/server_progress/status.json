@@ -1,10 +1,12 @@
 {
-  "status": "RUNNING",
+  "status": "COMPLETED",
   "started_at": "2026-09-17T21:59:20+08:00",
   "planned_epochs": 10,
   "train_n": 11085,
   "test_n": 2773,
   "model": "facebook/esm2_t30_150M_UR50D",
   "cuda_bf16_optimizer_preflight_passed": true,
-  "full_result_report_pending": true
+  "full_result_report_pending": false,
+  "completed_at": "2026-09-18T01:42:38+08:00",
+  "epochs_completed": 10
 }

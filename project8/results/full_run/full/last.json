@@ -1,0 +1,33 @@
+{
+  "epoch": 10,
+  "step": 6930,
+  "config": {
+    "data": "/root/autodl-tmp/BIO4901-lab8/project8/data/raw/deeploc_data.fasta",
+    "subset_size": null,
+    "eval_size": null,
+    "epochs": 10,
+    "batch_size": 4,
+    "device": "cuda",
+    "output_dir": "results/full_run/full",
+    "model": "facebook/esm2_t30_150M_UR50D",
+    "revision": "a695f6045e2e32885fa60af20c13cb35398ce30c",
+    "max_length": 512,
+    "seed": 42,
+    "log_steps": 10,
+    "embedding_dir": "/root/autodl-tmp/BIO4901-lab8/project8/data/embeddings",
+    "lr": 1e-05,
+    "effective_batch_size": 16,
+    "gradient_checkpointing": true,
+    "precision": "auto",
+    "optimizer": "adamw_8bit",
+    "lora_rank": 8,
+    "freeze_layers": 0,
+    "min_length": 128,
+    "probe_only": false,
+    "skip_probe": false,
+    "max_steps": null,
+    "resume": null
+  },
+  "state_keys": 486,
+  "checkpoint_policy": "epoch boundary; optimizer + RNG + trainable tensors"
+}
