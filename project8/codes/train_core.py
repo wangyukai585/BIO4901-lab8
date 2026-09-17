@@ -263,6 +263,8 @@ def main(stage):
         write_json(a.output_dir / "memory_probe.json", attempts)
     if a.probe_only:
         return
+    # Preflight consumes RNG; formal initialization must not depend on probe count.
+    seed_all(a.seed)
     tr, te = load_data(a)
     if a.resume:
         resume_state = torch.load(a.resume, map_location="cpu", weights_only=False)
