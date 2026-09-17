@@ -57,3 +57,19 @@ def test_knn_against_direct_reference():
     x=np.eye(10); y=np.arange(10); clf=FrozenKNN(5).fit(x,y)
     np.testing.assert_allclose(clf.predict_proba(x),np.eye(10))
     p=clf.predict_proba(np.ones((1,10))); assert p.shape==(1,10); assert np.isclose(p.sum(),1)
+
+def test_probe_retries_oom_and_discards_probe_model(monkeypatch,tmp_path):
+    import train_core as tc
+    attempts=[]
+    class Tiny(torch.nn.Module):
+        def __init__(self): super().__init__(); self.w=torch.nn.Linear(2,10)
+        def forward(self,b): return self.w(b)
+    def build(a,stage):
+        attempts.append(a.batch_size)
+        if len(attempts)<3: raise RuntimeError('CUDA out of memory (injected test)')
+        return None,Tiny()
+    monkeypatch.setattr(tc,'build_model',build)
+    monkeypatch.setattr(tc,'tokenize',lambda tok,seqs,n,d: torch.ones((len(seqs),2)))
+    a=argparse.Namespace(seed=42,batch_size=4,max_length=128,min_length=128,freeze_layers=0,precision='fp32',optimizer='adamw',lr=.001)
+    out=tc.probe_memory(a,torch.device('cpu'),logger(tmp_path))
+    assert attempts==[4,2,1]; assert [x['success'] for x in out]==[False,False,True]
