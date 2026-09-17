@@ -2,6 +2,11 @@
   "source": "https://services.healthtech.dtu.dk/services/DeepLoc-1.0/deeploc_data.fasta",
   "sha256": "ea5b052662dd580d56fab3bf7ebb43bbc215feb96308d45b66a96675874c1f2b",
   "n": 13858,
+  "raw_n": 14004,
+  "excluded_dual_localization": 146,
+  "label_mapping": {
+    "Plastid": "Chloroplast (broader source annotation)"
+  },
   "class_counts": {
     "Nucleus": 4043,
     "Cytoplasm": 2542,

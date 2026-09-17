@@ -1,0 +1,224 @@
+Assuming unrestricted shared filesystem usage.
+host: YUKAIMacBook-Pro.local
+Building DAG of jobs...
+Using shell: /bin/bash
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job stats:
+job         count
+--------  -------
+all             1
+data            1
+evaluate        1
+figures         1
+frozen          1
+full            1
+linear          1
+lora            1
+total           8
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 17 21:24:05 2026]
+localrule data:
+    output: data/raw/deeploc_data.fasta, results/qc/summary.json, results/images/fig0_data_qc.pdf
+    jobid: 3
+    reason: Forced execution
+    resources: tmpdir=/var/folders/tw/1shjxs9x4kn4dk9nyj0j13tr0000gn/T
+
+Downloading https://services.healthtech.dtu.dk/services/DeepLoc-1.0/deeploc_data.fasta, attempt 1
+1.0 MiB
+2.0 MiB
+3.0 MiB
+4.0 MiB
+5.0 MiB
+6.0 MiB
+7.0 MiB
+7.3 MiB
+{
+  "train_n": 11085,
+  "test_n": 2773,
+  "cross_split_identical_sequence_hashes": 0,
+  "cross_split_identical_sequence_pairs": 0,
+  "cross_split_accession_overlap": 0,
+  "within_train_duplicate_sequences": 49,
+  "within_test_duplicate_sequences": 5,
+  "homology_evidence": "Original DeepLoc paper section 2.3.1: PSI-CD-HIT, 30% identity OR 1e-6 E-value; 80% shorter-sequence coverage; clusters assigned to five folds; one held out.",
+  "limitation": "Exact duplicate audit only; does NOT independently establish a pairwise homology threshold or exclude ESM pretraining overlap.",
+  "source": "https://doi.org/10.1093/bioinformatics/btx431"
+}
+split                  test  train
+location                          
+Nucleus                 808   3235
+Cytoplasm               508   2034
+Extracellular           393   1580
+Mitochondrion           302   1208
+Cell membrane           273   1067
+Endoplasmic reticulum   173    689
+Chloroplast             152    605
+Golgi apparatus          70    286
+Lysosome/Vacuole         64    257
+Peroxisome               30    124
+[Thu Sep 17 21:24:11 2026]
+Finished job 3.
+1 of 8 steps (12%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 17 21:24:11 2026]
+localrule lora:
+    input: data/raw/deeploc_data.fasta
+    output: results/lora/predictions.csv, results/lora/robust_predictions.csv, results/lora/run.json, results/lora/history.csv
+    jobid: 5
+    reason: Forced execution
+    resources: tmpdir=/var/folders/tw/1shjxs9x4kn4dk9nyj0j13tr0000gn/T, gpu=1
+
+2026-09-17 21:24:12,910 8-bit optimizer is CUDA-only in pinned version; using fp32 AdamW locally
+2026-09-17 21:24:12,921 precision=torch.bfloat16 (bf16 after capability check; otherwise fp32 fallback)
+2026-09-17 21:24:13,011 device=mps estimated_seconds=2.0 (rough initial estimate; updated after first batch)
+2026-09-17 21:24:13,155 {"epoch": 0, "loss": null, "accuracy": null, "step": 0, "total_steps": 1, "elapsed_s": 0.14, "eta_s": null, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 0.00048828125, "rss_mb": 426.90625}
+2026-09-17 21:24:13,480 device=mps estimated_seconds=520.0 (rough initial estimate; updated after first batch)
+lora epoch 1/2:   0%|          | 0/13 [00:00<?, ?it/s]lora epoch 1/2:   8%|▊         | 1/13 [00:00<00:10,  1.14it/s]lora epoch 1/2:  15%|█▌        | 2/13 [00:01<00:08,  1.28it/s]lora epoch 1/2:  23%|██▎       | 3/13 [00:02<00:07,  1.28it/s]lora epoch 1/2:  31%|███       | 4/13 [00:03<00:06,  1.33it/s]lora epoch 1/2:  38%|███▊      | 5/13 [00:03<00:06,  1.33it/s]lora epoch 1/2:  46%|████▌     | 6/13 [00:04<00:05,  1.35it/s]lora epoch 1/2:  54%|█████▍    | 7/13 [00:05<00:04,  1.37it/s]lora epoch 1/2:  62%|██████▏   | 8/13 [00:05<00:03,  1.38it/s]lora epoch 1/2:  69%|██████▉   | 9/13 [00:06<00:02,  1.39it/s]2026-09-17 21:24:20,931 {"epoch": 1, "loss": 2.22236328125, "accuracy": 0.1875, "step": 10, "total_steps": 26, "elapsed_s": 7.45, "eta_s": 11.92, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 732.497314453125, "rss_mb": 594.25}
+lora epoch 1/2:  77%|███████▋  | 10/13 [00:07<00:02,  1.36it/s]lora epoch 1/2:  85%|████████▍ | 11/13 [00:08<00:01,  1.38it/s]lora epoch 1/2:  92%|█████████▏| 12/13 [00:08<00:00,  1.39it/s]lora epoch 1/2: 100%|██████████| 13/13 [00:09<00:00,  1.63it/s]lora epoch 1/2: 100%|██████████| 13/13 [00:09<00:00,  1.41it/s]
+lora epoch 2/2:   0%|          | 0/13 [00:00<?, ?it/s]lora epoch 2/2:   8%|▊         | 1/13 [00:00<00:08,  1.40it/s]lora epoch 2/2:  15%|█▌        | 2/13 [00:01<00:07,  1.39it/s]lora epoch 2/2:  23%|██▎       | 3/13 [00:02<00:07,  1.39it/s]lora epoch 2/2:  31%|███       | 4/13 [00:02<00:06,  1.35it/s]lora epoch 2/2:  38%|███▊      | 5/13 [00:03<00:05,  1.37it/s]lora epoch 2/2:  46%|████▌     | 6/13 [00:04<00:05,  1.38it/s]2026-09-17 21:24:27,865 {"epoch": 2, "loss": 2.2047293526785716, "accuracy": 0.25, "step": 20, "total_steps": 26, "elapsed_s": 14.39, "eta_s": 4.32, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 732.495361328125, "rss_mb": 610.90625}
+lora epoch 2/2:  54%|█████▍    | 7/13 [00:05<00:04,  1.38it/s]lora epoch 2/2:  62%|██████▏   | 8/13 [00:05<00:03,  1.39it/s]lora epoch 2/2:  69%|██████▉   | 9/13 [00:06<00:02,  1.39it/s]lora epoch 2/2:  77%|███████▋  | 10/13 [00:07<00:02,  1.40it/s]lora epoch 2/2:  85%|████████▍ | 11/13 [00:07<00:01,  1.40it/s]lora epoch 2/2:  92%|█████████▏| 12/13 [00:08<00:00,  1.39it/s]2026-09-17 21:24:31,890 {"epoch": 2, "loss": 2.19859375, "accuracy": 0.29, "step": 26, "total_steps": 26, "elapsed_s": 18.41, "eta_s": 0.0, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 732.495361328125, "rss_mb": 615.859375}
+lora epoch 2/2: 100%|██████████| 13/13 [00:09<00:00,  1.57it/s]lora epoch 2/2: 100%|██████████| 13/13 [00:09<00:00,  1.43it/s]
+2026-09-17 21:24:31,955 {"epoch": 2, "loss": 2.19859375, "accuracy": 0.29, "step": 26, "total_steps": 26, "elapsed_s": 18.48, "eta_s": 0.0, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 732.489501953125, "rss_mb": 615.84375}
+2026-09-17 21:24:32,098 device=mps estimated_seconds=40.0 (rough initial estimate; updated after first batch)
+Evaluate heldout:   0%|          | 0/10 [00:00<?, ?it/s]Evaluate heldout:  20%|██        | 2/10 [00:00<00:00, 16.98it/s]Evaluate heldout:  40%|████      | 4/10 [00:00<00:00, 16.98it/s]Evaluate heldout:  60%|██████    | 6/10 [00:00<00:00, 16.94it/s]Evaluate heldout:  80%|████████  | 8/10 [00:00<00:00, 16.99it/s]Evaluate heldout: 100%|██████████| 10/10 [00:00<00:00, 17.01it/s]Evaluate heldout: 100%|██████████| 10/10 [00:00<00:00, 16.99it/s]
+Evaluate heldout perturbed:   0%|          | 0/10 [00:00<?, ?it/s]Evaluate heldout perturbed:  20%|██        | 2/10 [00:00<00:00, 16.96it/s]Evaluate heldout perturbed:  40%|████      | 4/10 [00:00<00:00, 17.02it/s]Evaluate heldout perturbed:  60%|██████    | 6/10 [00:00<00:00, 17.04it/s]Evaluate heldout perturbed:  80%|████████  | 8/10 [00:00<00:00, 17.04it/s]Evaluate heldout perturbed: 100%|██████████| 10/10 [00:00<00:00, 16.98it/s]Evaluate heldout perturbed: 100%|██████████| 10/10 [00:00<00:00, 17.00it/s]
+2026-09-17 21:24:33,279 {"epoch": 0, "loss": null, "accuracy": null, "step": 20, "total_steps": 20, "elapsed_s": 1.18, "eta_s": 0.0, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 734.40625, "rss_mb": 626.640625}
+2026-09-17 21:24:33,309 Completed lora: {'config': {'data': PosixPath('/Users/wangyukai/course/BIO4901/lab8/project8/data/raw/deeploc_data.fasta'), 'subset_size': 200, 'eval_size': 40, 'epochs': 2, 'batch_size': 4, 'device': 'auto', 'output_dir': PosixPath('results/lora'), 'model': 'facebook/esm2_t30_150M_UR50D', 'revision': 'a695f6045e2e32885fa60af20c13cb35398ce30c', 'max_length': 128, 'seed': 42, 'log_steps': 10, 'embedding_dir': PosixPath('/Users/wangyukai/course/BIO4901/lab8/project8/data/embeddings'), 'lr': 0.0001, 'effective_batch_size': 16, 'gradient_checkpointing': True, 'precision': 'auto', 'optimizer': 'adamw_8bit', 'lora_rank': 8, 'freeze_layers': 0, 'min_length': 128, 'probe_only': False, 'skip_probe': False, 'max_steps': None, 'resume': None}, 'dataset_sha256': 'ea5b052662dd580d56fab3bf7ebb43bbc215feb96308d45b66a96675874c1f2b', 'device': 'mps', 'platform': 'macOS-26.6.2-arm64-arm-64bit', 'torch': '2.6.0', 'transformers': '4.51.3', 'peft': '0.15.2', 'status': 'SMOKE_PLACEHOLDER', 'gpu_allocated_mb': None, 'gpu_peak_mb': None, 'mps_allocated_mb': 734.40625, 'rss_mb': 627.015625, 'stage': 'lora', 'adaptation': 'lora', 'trainable_parameters': 620810, 'total_parameters': 149006051, 'train_seconds': 18.64496670803055, 'shared_extraction_seconds': 0.0, 'total_seconds': 20.35975420800969, 'optimizer_actual': 'AdamW', 'precision_actual': 'torch.bfloat16', 'effective_batch_size': 16, 'train_n': 200, 'test_n': 40, 'final_training_loss': 2.19859375, 'final_training_accuracy': 0.29, 'final_test_accuracy': 0.275, 'optimizer_steps': 26, 'limited_steps': False, 'probe_attempts': []}
+[Thu Sep 17 21:24:33 2026]
+Finished job 5.
+2 of 8 steps (25%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 17 21:24:33 2026]
+localrule frozen:
+    input: data/raw/deeploc_data.fasta
+    output: results/frozen/predictions.csv, results/frozen/robust_predictions.csv, results/frozen/run.json, data/embeddings/embeddings.npz, data/embeddings/metadata.json
+    jobid: 2
+    reason: Forced execution
+    resources: tmpdir=/var/folders/tw/1shjxs9x4kn4dk9nyj0j13tr0000gn/T
+
+2026-09-17 21:24:35,008 device=mps estimated_seconds=140.0 (rough initial estimate; updated after first batch)
+Frozen embeddings:   0%|          | 0/50 [00:00<?, ?it/s]Frozen embeddings:   2%|▏         | 1/50 [00:00<00:06,  7.24it/s]Frozen embeddings:   6%|▌         | 3/50 [00:00<00:03, 13.34it/s]Frozen embeddings:  10%|█         | 5/50 [00:00<00:02, 15.76it/s]Frozen embeddings:  14%|█▍        | 7/50 [00:00<00:02, 17.01it/s]Frozen embeddings:  18%|█▊        | 9/50 [00:00<00:02, 17.73it/s]2026-09-17 21:24:36,229 {"epoch": 0, "loss": null, "accuracy": null, "phase": "extract", "step": 10, "total_steps": 70, "elapsed_s": 1.22, "eta_s": 7.33, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 584.97705078125, "rss_mb": 466.0}
+Frozen embeddings:  22%|██▏       | 11/50 [00:00<00:02, 18.19it/s]Frozen embeddings:  26%|██▌       | 13/50 [00:00<00:02, 18.48it/s]Frozen embeddings:  30%|███       | 15/50 [00:00<00:01, 18.66it/s]Frozen embeddings:  34%|███▍      | 17/50 [00:00<00:01, 18.81it/s]Frozen embeddings:  38%|███▊      | 19/50 [00:01<00:01, 16.60it/s]2026-09-17 21:24:36,801 {"epoch": 0, "loss": null, "accuracy": null, "phase": "extract", "step": 20, "total_steps": 70, "elapsed_s": 1.79, "eta_s": 4.48, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 584.95263671875, "rss_mb": 497.25}
+Frozen embeddings:  42%|████▏     | 21/50 [00:01<00:01, 17.27it/s]Frozen embeddings:  46%|████▌     | 23/50 [00:01<00:01, 17.80it/s]Frozen embeddings:  50%|█████     | 25/50 [00:01<00:01, 18.17it/s]Frozen embeddings:  54%|█████▍    | 27/50 [00:01<00:01, 18.45it/s]Frozen embeddings:  58%|█████▊    | 29/50 [00:01<00:01, 18.64it/s]2026-09-17 21:24:37,325 {"epoch": 0, "loss": null, "accuracy": null, "phase": "extract", "step": 30, "total_steps": 70, "elapsed_s": 2.32, "eta_s": 3.09, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 584.95263671875, "rss_mb": 497.390625}
+Frozen embeddings:  62%|██████▏   | 31/50 [00:01<00:01, 18.76it/s]Frozen embeddings:  66%|██████▌   | 33/50 [00:01<00:00, 18.85it/s]Frozen embeddings:  70%|███████   | 35/50 [00:01<00:00, 18.91it/s]Frozen embeddings:  74%|███████▍  | 37/50 [00:02<00:00, 18.99it/s]Frozen embeddings:  78%|███████▊  | 39/50 [00:02<00:00, 19.02it/s]2026-09-17 21:24:37,849 {"epoch": 0, "loss": null, "accuracy": null, "phase": "extract", "step": 40, "total_steps": 70, "elapsed_s": 2.84, "eta_s": 2.13, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 584.95263671875, "rss_mb": 497.515625}
+Frozen embeddings:  82%|████████▏ | 41/50 [00:02<00:00, 19.03it/s]Frozen embeddings:  86%|████████▌ | 43/50 [00:02<00:00, 19.07it/s]Frozen embeddings:  90%|█████████ | 45/50 [00:02<00:00, 19.07it/s]Frozen embeddings:  94%|█████████▍| 47/50 [00:02<00:00, 19.11it/s]Frozen embeddings:  98%|█████████▊| 49/50 [00:02<00:00, 19.10it/s]2026-09-17 21:24:38,372 {"epoch": 0, "loss": null, "accuracy": null, "phase": "extract", "step": 50, "total_steps": 70, "elapsed_s": 3.36, "eta_s": 1.35, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 584.95263671875, "rss_mb": 497.921875}
+Frozen embeddings: 100%|██████████| 50/50 [00:02<00:00, 18.16it/s]
+Frozen embeddings:   0%|          | 0/10 [00:00<?, ?it/s]Frozen embeddings:  20%|██        | 2/10 [00:00<00:00, 18.97it/s]Frozen embeddings:  40%|████      | 4/10 [00:00<00:00, 19.08it/s]Frozen embeddings:  60%|██████    | 6/10 [00:00<00:00, 19.05it/s]Frozen embeddings:  80%|████████  | 8/10 [00:00<00:00, 19.05it/s]2026-09-17 21:24:38,898 {"epoch": 0, "loss": null, "accuracy": null, "phase": "extract", "step": 60, "total_steps": 70, "elapsed_s": 3.89, "eta_s": 0.65, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 584.95263671875, "rss_mb": 498.046875}
+Frozen embeddings: 100%|██████████| 10/10 [00:00<00:00, 19.06it/s]Frozen embeddings: 100%|██████████| 10/10 [00:00<00:00, 19.05it/s]
+Frozen embeddings:   0%|          | 0/10 [00:00<?, ?it/s]Frozen embeddings:  20%|██        | 2/10 [00:00<00:00, 18.98it/s]Frozen embeddings:  40%|████      | 4/10 [00:00<00:00, 19.03it/s]Frozen embeddings:  60%|██████    | 6/10 [00:00<00:00, 19.06it/s]Frozen embeddings:  80%|████████  | 8/10 [00:00<00:00, 19.06it/s]2026-09-17 21:24:39,423 {"epoch": 0, "loss": null, "accuracy": null, "phase": "extract", "step": 70, "total_steps": 70, "elapsed_s": 4.42, "eta_s": 0.0, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 584.95263671875, "rss_mb": 498.140625}
+Frozen embeddings: 100%|██████████| 10/10 [00:00<00:00, 19.05it/s]Frozen embeddings: 100%|██████████| 10/10 [00:00<00:00, 19.05it/s]
+2026-09-17 21:24:39,424 {"epoch": 0, "loss": null, "accuracy": null, "phase": "extract", "step": 70, "total_steps": 70, "elapsed_s": 4.42, "eta_s": 0.0, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 584.936279296875, "rss_mb": 498.109375}
+2026-09-17 21:24:39,503 Completed frozen: {'config': {'data': PosixPath('/Users/wangyukai/course/BIO4901/lab8/project8/data/raw/deeploc_data.fasta'), 'subset_size': 200, 'eval_size': 40, 'epochs': 10, 'batch_size': 4, 'device': 'auto', 'output_dir': PosixPath('results/frozen'), 'model': 'facebook/esm2_t30_150M_UR50D', 'revision': 'a695f6045e2e32885fa60af20c13cb35398ce30c', 'max_length': 128, 'seed': 42, 'log_steps': 10, 'embedding_dir': PosixPath('data/embeddings')}, 'dataset_sha256': 'ea5b052662dd580d56fab3bf7ebb43bbc215feb96308d45b66a96675874c1f2b', 'device': 'mps', 'platform': 'macOS-26.6.2-arm64-arm-64bit', 'torch': '2.6.0', 'transformers': '4.51.3', 'peft': '0.15.2', 'status': 'SMOKE_PLACEHOLDER', 'gpu_allocated_mb': None, 'gpu_peak_mb': None, 'mps_allocated_mb': 584.936279296875, 'rss_mb': 510.546875, 'trainable_parameters': 0, 'total_parameters': 148385241, 'final_test_accuracy': 0.4, 'classifier': '5-NN cosine distance; no gradient-trained parameters', 'extraction_seconds': 4.514302875031717, 'fit_predict_seconds': 0.030663790996186435, 'total_seconds': 4.544967000023462, 'train_n': 200, 'test_n': 40}
+[Thu Sep 17 21:24:39 2026]
+Finished job 2.
+3 of 8 steps (38%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 17 21:24:39 2026]
+localrule full:
+    input: data/raw/deeploc_data.fasta
+    output: results/full/predictions.csv, results/full/robust_predictions.csv, results/full/run.json, results/full/history.csv
+    jobid: 6
+    reason: Forced execution
+    resources: tmpdir=/var/folders/tw/1shjxs9x4kn4dk9nyj0j13tr0000gn/T, gpu=1
+
+2026-09-17 21:24:41,516 8-bit optimizer is CUDA-only in pinned version; using fp32 AdamW locally
+2026-09-17 21:24:41,528 precision=torch.bfloat16 (bf16 after capability check; otherwise fp32 fallback)
+2026-09-17 21:24:41,622 device=mps estimated_seconds=2.0 (rough initial estimate; updated after first batch)
+2026-09-17 21:24:41,751 {"epoch": 0, "loss": null, "accuracy": null, "step": 0, "total_steps": 1, "elapsed_s": 0.13, "eta_s": null, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 0.00048828125, "rss_mb": 422.78125}
+2026-09-17 21:24:42,040 device=mps estimated_seconds=5.0 (rough initial estimate; updated after first batch)
+full epoch 1/1:   0%|          | 0/200 [00:00<?, ?it/s]2026-09-17 21:24:42,630 {"epoch": 1, "loss": 2.0625, "accuracy": 0.0, "step": 1, "total_steps": 1, "elapsed_s": 0.59, "eta_s": 0.0, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 2576.5341796875, "rss_mb": 621.265625}
+full epoch 1/1:   0%|          | 0/200 [00:00<?, ?it/s]
+2026-09-17 21:24:45,266 {"epoch": 1, "loss": 2.0625, "accuracy": 0.0, "step": 1, "total_steps": 1, "elapsed_s": 3.23, "eta_s": 0.0, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 2576.53076171875, "rss_mb": 905.6875}
+2026-09-17 21:24:46,299 device=mps estimated_seconds=160.0 (rough initial estimate; updated after first batch)
+Evaluate heldout:   0%|          | 0/40 [00:00<?, ?it/s]Evaluate heldout:   8%|▊         | 3/40 [00:00<00:02, 15.88it/s]Evaluate heldout:  15%|█▌        | 6/40 [00:00<00:01, 20.90it/s]Evaluate heldout:  22%|██▎       | 9/40 [00:00<00:01, 23.51it/s]Evaluate heldout:  30%|███       | 12/40 [00:00<00:01, 25.21it/s]Evaluate heldout:  38%|███▊      | 15/40 [00:00<00:00, 26.18it/s]Evaluate heldout:  45%|████▌     | 18/40 [00:00<00:00, 26.71it/s]Evaluate heldout:  52%|█████▎    | 21/40 [00:00<00:00, 27.27it/s]Evaluate heldout:  60%|██████    | 24/40 [00:00<00:00, 27.57it/s]Evaluate heldout:  68%|██████▊   | 27/40 [00:01<00:00, 27.68it/s]Evaluate heldout:  75%|███████▌  | 30/40 [00:01<00:00, 27.82it/s]Evaluate heldout:  82%|████████▎ | 33/40 [00:01<00:00, 28.04it/s]Evaluate heldout:  90%|█████████ | 36/40 [00:01<00:00, 28.11it/s]Evaluate heldout:  98%|█████████▊| 39/40 [00:01<00:00, 28.00it/s]Evaluate heldout: 100%|██████████| 40/40 [00:01<00:00, 26.45it/s]
+Evaluate heldout perturbed:   0%|          | 0/40 [00:00<?, ?it/s]Evaluate heldout perturbed:   8%|▊         | 3/40 [00:00<00:01, 26.71it/s]Evaluate heldout perturbed:  15%|█▌        | 6/40 [00:00<00:01, 27.14it/s]Evaluate heldout perturbed:  22%|██▎       | 9/40 [00:00<00:01, 27.80it/s]Evaluate heldout perturbed:  30%|███       | 12/40 [00:00<00:00, 28.05it/s]Evaluate heldout perturbed:  38%|███▊      | 15/40 [00:00<00:00, 28.22it/s]Evaluate heldout perturbed:  45%|████▌     | 18/40 [00:00<00:00, 28.24it/s]Evaluate heldout perturbed:  52%|█████▎    | 21/40 [00:00<00:00, 28.13it/s]Evaluate heldout perturbed:  60%|██████    | 24/40 [00:00<00:00, 28.26it/s]Evaluate heldout perturbed:  68%|██████▊   | 27/40 [00:00<00:00, 28.33it/s]Evaluate heldout perturbed:  75%|███████▌  | 30/40 [00:01<00:00, 28.27it/s]Evaluate heldout perturbed:  82%|████████▎ | 33/40 [00:01<00:00, 28.33it/s]Evaluate heldout perturbed:  90%|█████████ | 36/40 [00:01<00:00, 28.45it/s]Evaluate heldout perturbed:  98%|█████████▊| 39/40 [00:01<00:00, 28.58it/s]Evaluate heldout perturbed: 100%|██████████| 40/40 [00:01<00:00, 28.25it/s]
+2026-09-17 21:24:49,235 {"epoch": 0, "loss": null, "accuracy": null, "step": 80, "total_steps": 80, "elapsed_s": 2.94, "eta_s": 0.0, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 2576.2216796875, "rss_mb": 1324.265625}
+2026-09-17 21:24:49,297 Completed full: {'config': {'data': PosixPath('/Users/wangyukai/course/BIO4901/lab8/project8/data/raw/deeploc_data.fasta'), 'subset_size': 200, 'eval_size': 40, 'epochs': 1, 'batch_size': 1, 'device': 'auto', 'output_dir': PosixPath('results/full'), 'model': 'facebook/esm2_t30_150M_UR50D', 'revision': 'a695f6045e2e32885fa60af20c13cb35398ce30c', 'max_length': 128, 'seed': 42, 'log_steps': 10, 'embedding_dir': PosixPath('/Users/wangyukai/course/BIO4901/lab8/project8/data/embeddings'), 'lr': 1e-05, 'effective_batch_size': 1, 'gradient_checkpointing': True, 'precision': 'auto', 'optimizer': 'adamw_8bit', 'lora_rank': 8, 'freeze_layers': 0, 'min_length': 128, 'probe_only': False, 'skip_probe': False, 'max_steps': 1, 'resume': None}, 'dataset_sha256': 'ea5b052662dd580d56fab3bf7ebb43bbc215feb96308d45b66a96675874c1f2b', 'device': 'mps', 'platform': 'macOS-26.6.2-arm64-arm-64bit', 'torch': '2.6.0', 'transformers': '4.51.3', 'peft': '0.15.2', 'status': 'SMOKE_PLACEHOLDER', 'gpu_allocated_mb': None, 'gpu_peak_mb': None, 'mps_allocated_mb': 2576.2216796875, 'rss_mb': 1335.765625, 'stage': 'full', 'adaptation': 'full', 'trainable_parameters': 148391050, 'total_parameters': 148391651, 'train_seconds': 3.3732587919803336, 'shared_extraction_seconds': 0.0, 'total_seconds': 7.707829249906354, 'optimizer_actual': 'AdamW', 'precision_actual': 'torch.bfloat16', 'effective_batch_size': 1, 'train_n': 200, 'test_n': 40, 'final_training_loss': 2.0625, 'final_training_accuracy': 0.0, 'final_test_accuracy': 0.225, 'optimizer_steps': 1, 'limited_steps': True, 'probe_attempts': []}
+[Thu Sep 17 21:24:49 2026]
+Finished job 6.
+4 of 8 steps (50%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 17 21:24:49 2026]
+localrule linear:
+    input: data/embeddings/embeddings.npz, data/embeddings/metadata.json
+    output: results/linear/predictions.csv, results/linear/robust_predictions.csv, results/linear/run.json, results/linear/history.csv
+    jobid: 4
+    reason: Forced execution
+    resources: tmpdir=/var/folders/tw/1shjxs9x4kn4dk9nyj0j13tr0000gn/T
+
+2026-09-17 21:24:52,014 precision=torch.bfloat16 (bf16 after capability check; otherwise fp32 fallback)
+2026-09-17 21:24:52,133 device=mps estimated_seconds=130.0 (rough initial estimate; updated after first batch)
+linear epoch 1/2:   0%|          | 0/13 [00:00<?, ?it/s]2026-09-17 21:24:52,241 {"epoch": 1, "loss": 2.21640625, "accuracy": 0.2625, "step": 10, "total_steps": 26, "elapsed_s": 0.11, "eta_s": 0.17, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 0.119384765625, "rss_mb": 464.671875}
+linear epoch 1/2:  85%|████████▍ | 11/13 [00:00<00:00, 108.12it/s]linear epoch 1/2: 100%|██████████| 13/13 [00:00<00:00, 103.99it/s]
+linear epoch 2/2:   0%|          | 0/13 [00:00<?, ?it/s]2026-09-17 21:24:52,294 {"epoch": 2, "loss": 2.0331333705357144, "accuracy": 0.2767857142857143, "step": 20, "total_steps": 26, "elapsed_s": 0.16, "eta_s": 0.05, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 0.119384765625, "rss_mb": 472.453125}
+2026-09-17 21:24:52,309 {"epoch": 2, "loss": 1.99171875, "accuracy": 0.29, "step": 26, "total_steps": 26, "elapsed_s": 0.18, "eta_s": 0.0, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 0.119140625, "rss_mb": 472.453125}
+linear epoch 2/2: 100%|██████████| 13/13 [00:00<00:00, 376.67it/s]
+2026-09-17 21:24:52,316 {"epoch": 2, "loss": 1.99171875, "accuracy": 0.29, "step": 26, "total_steps": 26, "elapsed_s": 0.18, "eta_s": 0.0, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 0.115234375, "rss_mb": 472.421875}
+2026-09-17 21:24:52,318 device=mps estimated_seconds=12.0 (rough initial estimate; updated after first batch)
+Evaluate heldout:   0%|          | 0/3 [00:00<?, ?it/s]Evaluate heldout: 100%|██████████| 3/3 [00:00<00:00, 522.18it/s]
+Evaluate heldout perturbed:   0%|          | 0/3 [00:00<?, ?it/s]Evaluate heldout perturbed: 100%|██████████| 3/3 [00:00<00:00, 1709.40it/s]
+2026-09-17 21:24:52,329 {"epoch": 0, "loss": null, "accuracy": null, "step": 6, "total_steps": 6, "elapsed_s": 0.01, "eta_s": 0.0, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 0.173828125, "rss_mb": 474.296875}
+2026-09-17 21:24:52,353 Completed linear: {'config': {'data': PosixPath('/Users/wangyukai/course/BIO4901/lab8/project8/data/raw/deeploc_data.fasta'), 'subset_size': 200, 'eval_size': 40, 'epochs': 2, 'batch_size': 16, 'device': 'auto', 'output_dir': PosixPath('results/linear'), 'model': 'facebook/esm2_t30_150M_UR50D', 'revision': 'a695f6045e2e32885fa60af20c13cb35398ce30c', 'max_length': 128, 'seed': 42, 'log_steps': 10, 'embedding_dir': PosixPath('data/embeddings'), 'lr': 0.001, 'effective_batch_size': 16, 'gradient_checkpointing': True, 'precision': 'auto', 'optimizer': 'adamw', 'lora_rank': 8, 'freeze_layers': 0, 'min_length': 128, 'probe_only': False, 'skip_probe': False, 'max_steps': None, 'resume': None}, 'dataset_sha256': 'ea5b052662dd580d56fab3bf7ebb43bbc215feb96308d45b66a96675874c1f2b', 'device': 'mps', 'platform': 'macOS-26.6.2-arm64-arm-64bit', 'torch': '2.6.0', 'transformers': '4.51.3', 'peft': '0.15.2', 'status': 'SMOKE_PLACEHOLDER', 'gpu_allocated_mb': None, 'gpu_peak_mb': None, 'mps_allocated_mb': 0.173828125, 'rss_mb': 474.6875, 'stage': 'linear', 'adaptation': 'linear', 'trainable_parameters': 6410, 'total_parameters': 6410, 'train_seconds': 0.19803391594905406, 'shared_extraction_seconds': 4.514302875031717, 'total_seconds': 4.829433290986344, 'optimizer_actual': 'AdamW', 'precision_actual': 'torch.bfloat16', 'effective_batch_size': 16, 'train_n': 200, 'test_n': 40, 'final_training_loss': 1.99171875, 'final_training_accuracy': 0.29, 'final_test_accuracy': 0.25, 'optimizer_steps': 26, 'limited_steps': False, 'probe_attempts': [], 'head_only_gpu_peak_mb': None}
+[Thu Sep 17 21:24:52 2026]
+Finished job 4.
+5 of 8 steps (62%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 17 21:24:52 2026]
+localrule evaluate:
+    input: results/frozen/predictions.csv, results/linear/predictions.csv, results/lora/predictions.csv, results/full/predictions.csv, results/frozen/robust_predictions.csv, results/linear/robust_predictions.csv, results/lora/robust_predictions.csv, results/full/robust_predictions.csv, results/frozen/run.json, results/linear/run.json, results/lora/run.json, results/full/run.json
+    output: results/metrics_table.csv, results/bootstrap_ci.csv
+    jobid: 1
+    reason: Forced execution
+    resources: tmpdir=/var/folders/tw/1shjxs9x4kn4dk9nyj0j13tr0000gn/T
+
+strategy  accuracy  macro_f1      ece       nll    brier  trainable_parameters  total_seconds  train_seconds gpu_peak_mb  mps_allocated_mb      rss_mb device            status  test_n  limited_steps  max_length adaptation
+  frozen     0.400  0.258030 0.218412 10.579415 0.794096                     0       4.544967       0.030664        None        584.936279  510.546875    mps SMOKE_PLACEHOLDER      40          False         128     frozen
+  linear     0.250  0.040000 0.053743  2.074115 0.845678                  6410       4.829433       0.198034        None          0.173828  474.687500    mps SMOKE_PLACEHOLDER      40          False         128     linear
+    lora     0.275  0.101842 0.144321  2.211019 0.880862                620810      20.359754      18.644967        None        734.406250  627.015625    mps SMOKE_PLACEHOLDER      40          False         128       lora
+    full     0.225  0.041860 0.095256  2.292750 0.897314             148391050       7.707829       3.373259        None       2576.221680 1335.765625    mps SMOKE_PLACEHOLDER      40           True         128       full
+[Thu Sep 17 21:24:56 2026]
+Finished job 1.
+6 of 8 steps (75%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 17 21:24:56 2026]
+localrule figures:
+    input: results/metrics_table.csv, results/bootstrap_ci.csv, data/embeddings/embeddings.npz, results/linear/history.csv, results/lora/history.csv, results/full/history.csv
+    output: results/images/fig1_parameter_efficiency.pdf, results/images/fig2_performance_cost.pdf, results/images/fig3_calibration.pdf, results/images/fig4_confusion_matrices.pdf, results/images/fig5_embedding_pca.pdf, results/images/fig6_workflow.pdf, results/images/fig7_training_curves.pdf
+    jobid: 7
+    reason: Forced execution
+    resources: tmpdir=/var/folders/tw/1shjxs9x4kn4dk9nyj0j13tr0000gn/T
+
+Figures saved to results/images
+[Thu Sep 17 21:24:59 2026]
+Finished job 7.
+7 of 8 steps (88%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 17 21:24:59 2026]
+localrule all:
+    input: results/metrics_table.csv, results/bootstrap_ci.csv, results/images/fig1_parameter_efficiency.pdf, results/images/fig2_performance_cost.pdf, results/images/fig3_calibration.pdf, results/images/fig4_confusion_matrices.pdf, results/images/fig5_embedding_pca.pdf, results/images/fig6_workflow.pdf, results/images/fig7_training_curves.pdf
+    jobid: 0
+    reason: Forced execution
+    resources: tmpdir=/var/folders/tw/1shjxs9x4kn4dk9nyj0j13tr0000gn/T
+
+[Thu Sep 17 21:24:59 2026]
+Finished job 0.
+8 of 8 steps (100%) done
+Complete log: .snakemake/log/2026-09-17T212405.545353.snakemake.log

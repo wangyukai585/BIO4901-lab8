@@ -1,0 +1,5 @@
+{
+  "cpu_linear_resumed_matches_uninterrupted_bitwise": true,
+  "epochs": 2,
+  "dataset_digest_guard_enabled": true
+}

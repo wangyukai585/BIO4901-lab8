@@ -1,0 +1,96 @@
+host: YUKAIMacBook-Pro.local
+Building DAG of jobs...
+Job stats:
+job         count
+--------  -------
+all             1
+evaluate        1
+figures         1
+frozen          1
+full            1
+linear          1
+lora            1
+total           7
+
+
+[Thu Sep 17 21:25:27 2026]
+rule lora:
+    input: data/raw/deeploc_data.fasta
+    output: results/full_run/lora/predictions.csv, results/full_run/lora/robust_predictions.csv, results/full_run/lora/run.json, results/full_run/lora/history.csv
+    jobid: 5
+    reason: Missing output files: results/full_run/lora/robust_predictions.csv, results/full_run/lora/predictions.csv, results/full_run/lora/run.json, results/full_run/lora/history.csv
+    resources: tmpdir=<TBD>, gpu=1
+
+
+[Thu Sep 17 21:25:27 2026]
+rule frozen:
+    input: data/raw/deeploc_data.fasta
+    output: results/full_run/frozen/predictions.csv, results/full_run/frozen/robust_predictions.csv, results/full_run/frozen/run.json, data/embeddings_full/embeddings.npz, data/embeddings_full/metadata.json
+    jobid: 2
+    reason: Missing output files: data/embeddings_full/metadata.json, results/full_run/frozen/robust_predictions.csv, results/full_run/frozen/run.json, results/full_run/frozen/predictions.csv, data/embeddings_full/embeddings.npz
+    resources: tmpdir=<TBD>
+
+
+[Thu Sep 17 21:25:27 2026]
+rule full:
+    input: data/raw/deeploc_data.fasta
+    output: results/full_run/full/predictions.csv, results/full_run/full/robust_predictions.csv, results/full_run/full/run.json, results/full_run/full/history.csv
+    jobid: 6
+    reason: Missing output files: results/full_run/full/robust_predictions.csv, results/full_run/full/predictions.csv, results/full_run/full/run.json, results/full_run/full/history.csv
+    resources: tmpdir=<TBD>, gpu=1
+
+
+[Thu Sep 17 21:25:27 2026]
+rule linear:
+    input: data/embeddings_full/embeddings.npz, data/embeddings_full/metadata.json
+    output: results/full_run/linear/predictions.csv, results/full_run/linear/robust_predictions.csv, results/full_run/linear/run.json, results/full_run/linear/history.csv
+    jobid: 4
+    reason: Missing output files: results/full_run/linear/history.csv, results/full_run/linear/predictions.csv, results/full_run/linear/robust_predictions.csv, results/full_run/linear/run.json; Input files updated by another job: data/embeddings_full/metadata.json, data/embeddings_full/embeddings.npz
+    resources: tmpdir=<TBD>
+
+
+[Thu Sep 17 21:25:27 2026]
+rule evaluate:
+    input: results/full_run/frozen/predictions.csv, results/full_run/linear/predictions.csv, results/full_run/lora/predictions.csv, results/full_run/full/predictions.csv, results/full_run/frozen/robust_predictions.csv, results/full_run/linear/robust_predictions.csv, results/full_run/lora/robust_predictions.csv, results/full_run/full/robust_predictions.csv, results/full_run/frozen/run.json, results/full_run/linear/run.json, results/full_run/lora/run.json, results/full_run/full/run.json
+    output: results/full_run/metrics_table.csv, results/full_run/bootstrap_ci.csv
+    jobid: 1
+    reason: Missing output files: results/full_run/bootstrap_ci.csv, results/full_run/metrics_table.csv; Input files updated by another job: results/full_run/linear/robust_predictions.csv, results/full_run/lora/run.json, results/full_run/full/predictions.csv, results/full_run/lora/robust_predictions.csv, results/full_run/lora/predictions.csv, results/full_run/frozen/robust_predictions.csv, results/full_run/full/robust_predictions.csv, results/full_run/linear/predictions.csv, results/full_run/frozen/run.json, results/full_run/frozen/predictions.csv, results/full_run/full/run.json, results/full_run/linear/run.json
+    resources: tmpdir=<TBD>
+
+
+[Thu Sep 17 21:25:27 2026]
+rule figures:
+    input: results/full_run/metrics_table.csv, results/full_run/bootstrap_ci.csv, data/embeddings_full/embeddings.npz, results/full_run/linear/history.csv, results/full_run/lora/history.csv, results/full_run/full/history.csv
+    output: results/full_run/images/fig1_parameter_efficiency.pdf, results/full_run/images/fig2_performance_cost.pdf, results/full_run/images/fig3_calibration.pdf, results/full_run/images/fig4_confusion_matrices.pdf, results/full_run/images/fig5_embedding_pca.pdf, results/full_run/images/fig6_workflow.pdf, results/full_run/images/fig7_training_curves.pdf
+    jobid: 7
+    reason: Missing output files: results/full_run/images/fig1_parameter_efficiency.pdf, results/full_run/images/fig2_performance_cost.pdf, results/full_run/images/fig3_calibration.pdf, results/full_run/images/fig7_training_curves.pdf, results/full_run/images/fig5_embedding_pca.pdf, results/full_run/images/fig6_workflow.pdf, results/full_run/images/fig4_confusion_matrices.pdf; Input files updated by another job: results/full_run/bootstrap_ci.csv, results/full_run/metrics_table.csv, results/full_run/full/history.csv, results/full_run/linear/history.csv, results/full_run/lora/history.csv, data/embeddings_full/embeddings.npz
+    resources: tmpdir=<TBD>
+
+
+[Thu Sep 17 21:25:27 2026]
+rule all:
+    input: results/full_run/metrics_table.csv, results/full_run/bootstrap_ci.csv, results/full_run/images/fig1_parameter_efficiency.pdf, results/full_run/images/fig2_performance_cost.pdf, results/full_run/images/fig3_calibration.pdf, results/full_run/images/fig4_confusion_matrices.pdf, results/full_run/images/fig5_embedding_pca.pdf, results/full_run/images/fig6_workflow.pdf, results/full_run/images/fig7_training_curves.pdf
+    jobid: 0
+    reason: Input files updated by another job: results/full_run/images/fig1_parameter_efficiency.pdf, results/full_run/images/fig2_performance_cost.pdf, results/full_run/images/fig3_calibration.pdf, results/full_run/bootstrap_ci.csv, results/full_run/images/fig7_training_curves.pdf, results/full_run/images/fig5_embedding_pca.pdf, results/full_run/metrics_table.csv, results/full_run/images/fig6_workflow.pdf, results/full_run/images/fig4_confusion_matrices.pdf
+    resources: tmpdir=<TBD>
+
+Job stats:
+job         count
+--------  -------
+all             1
+evaluate        1
+figures         1
+frozen          1
+full            1
+linear          1
+lora            1
+total           7
+
+Reasons:
+    (check individual jobs above for details)
+    input files updated by another job:
+        all, evaluate, figures, linear
+    output files have to be generated:
+        evaluate, figures, frozen, full, linear, lora
+
+This was a dry-run (flag -n). The order of jobs does not reflect the order of execution.

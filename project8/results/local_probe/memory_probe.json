@@ -1,0 +1,13 @@
+[
+  {
+    "batch_size": 1,
+    "max_length": 128,
+    "freeze_layers": 0,
+    "success": true,
+    "seconds": 0.8827974590240046,
+    "gpu_allocated_mb": null,
+    "gpu_peak_mb": null,
+    "mps_allocated_mb": 1704.761474609375,
+    "rss_mb": 595.265625
+  }
+]

@@ -1,0 +1,5 @@
+{
+  "output_dtype": "torch.bfloat16",
+  "warnings": [],
+  "supported": true
+}

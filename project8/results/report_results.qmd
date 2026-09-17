@@ -1,0 +1,45 @@
+**[PLACEHOLDER - 待服务器全量运行后替换]**
+
+全量数据 QC：原始 14,004 条；十类任务保留 13,858 条；排除双定位 146 条。训练 11,085 条，测试 2,773 条。跨集合完全重复序列数为 0。
+
+| 方法 | Accuracy | Macro F1 | ECE | 可训练参数 | 时间/s |
+|:--|--:|--:|--:|--:|--:|
+| frozen | 0.400 | 0.258 | 0.218 | 0 | 4.5 |
+| linear | 0.250 | 0.040 | 0.054 | 6,410 | 4.8 |
+| lora | 0.275 | 0.102 | 0.144 | 620,810 | 20.4 |
+| full | 0.225 | 0.042 | 0.095 | 148,391,050 | 7.7 |
+
+每种方法测试样本数：40。时间包含该阶段模型准备、训练与推断；Linear 计入共享 embedding 提取成本。网络缓存、硬件与测试规模影响时间，不用于跨设备成本推断。
+
+本地 MPS 内存不是 CUDA 显存；CUDA peak 字段留空。Full FT 冒烟仅执行一个 optimizer step，分数不能用于比较适配策略。
+
+![可训练参数量。冒烟占位结果。](results/images/fig1_parameter_efficiency.pdf){width=95% fig-pos="H"}
+
+![性能与成本。冒烟占位结果。](results/images/fig2_performance_cost.pdf){width=95% fig-pos="H"}
+
+![校准曲线。冒烟占位结果。](results/images/fig3_calibration.pdf){width=95% fig-pos="H"}
+
+![混淆矩阵。冒烟占位结果。](results/images/fig4_confusion_matrices.pdf){width=95% fig-pos="H"}
+
+![Embedding PCA。冒烟占位结果。](results/images/fig5_embedding_pca.pdf){width=95% fig-pos="H"}
+
+![训练曲线。冒烟占位结果。](results/images/fig7_training_curves.pdf){width=95% fig-pos="H"}
+
+## 配对 bootstrap 区间
+
+| 差值方向 | 指标 | 估计差 | 95% CI |
+|:--|:--|--:|:--|
+| frozen - linear | accuracy | 0.150 | [0.025, 0.250] |
+| frozen - linear | macro_f1 | 0.218 | [0.120, 0.298] |
+| frozen - lora | accuracy | 0.125 | [-0.026, 0.275] |
+| frozen - lora | macro_f1 | 0.156 | [0.041, 0.250] |
+| frozen - full | accuracy | 0.175 | [0.049, 0.300] |
+| frozen - full | macro_f1 | 0.216 | [0.118, 0.295] |
+| linear - lora | accuracy | -0.025 | [-0.125, 0.075] |
+| linear - lora | macro_f1 | -0.062 | [-0.112, -0.011] |
+| linear - full | accuracy | 0.025 | [0.000, 0.075] |
+| linear - full | macro_f1 | -0.002 | [-0.009, 0.007] |
+| lora - full | accuracy | 0.050 | [-0.075, 0.175] |
+| lora - full | macro_f1 | 0.060 | [0.006, 0.112] |
+
+序列级分层配对 bootstrap 固定观测类别比例。样本相关性与训练随机性未包含在区间内；没有同源簇 ID 时，不能把这些区间解释为家族独立泛化的完整不确定性。

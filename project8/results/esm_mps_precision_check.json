@@ -1,0 +1,6 @@
+{
+  "esm_bf16_autocast": true,
+  "pooled_dtype": "torch.float32",
+  "finite_loss": true,
+  "gradient_tensors": 483
+}

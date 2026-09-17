@@ -1,0 +1,11 @@
+,Nucleus,Cytoplasm,Extracellular,Mitochondrion,Cell membrane,Endoplasmic reticulum,Chloroplast,Golgi apparatus,Lysosome/Vacuole,Peroxisome
+Nucleus,9,0,0,0,0,0,0,0,0,1
+Cytoplasm,5,0,0,0,0,0,0,0,0,1
+Extracellular,2,0,0,0,0,0,0,0,0,1
+Mitochondrion,4,0,0,0,0,0,0,0,0,1
+Cell membrane,5,0,0,0,0,0,0,0,0,0
+Endoplasmic reticulum,2,0,0,0,0,0,0,0,0,0
+Chloroplast,3,0,0,0,0,0,0,0,0,2
+Golgi apparatus,1,0,0,0,0,0,0,0,0,1
+Lysosome/Vacuole,1,0,0,0,0,0,0,0,0,0
+Peroxisome,1,0,0,0,0,0,0,0,0,0

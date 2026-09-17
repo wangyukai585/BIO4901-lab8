@@ -1,0 +1,5 @@
+2026-09-17 21:21:38,877 8-bit optimizer is CUDA-only in pinned version; using fp32 AdamW locally
+2026-09-17 21:21:38,890 precision=torch.bfloat16 (bf16 after capability check; otherwise fp32 fallback)
+2026-09-17 21:21:38,890 device=mps estimated_seconds=2.0 (rough initial estimate; updated after first batch)
+2026-09-17 21:21:40,365 memory_probe={'batch_size': 1, 'max_length': 128, 'freeze_layers': 0, 'success': True, 'seconds': 0.8827974590240046, 'gpu_allocated_mb': None, 'gpu_peak_mb': None, 'mps_allocated_mb': 1704.761474609375, 'rss_mb': 595.265625}
+2026-09-17 21:21:40,477 {"epoch": 0, "loss": null, "accuracy": null, "step": 0, "total_steps": 1, "elapsed_s": 1.59, "eta_s": null, "gpu_allocated_mb": null, "gpu_peak_mb": null, "mps_allocated_mb": 0.0, "rss_mb": 595.234375}

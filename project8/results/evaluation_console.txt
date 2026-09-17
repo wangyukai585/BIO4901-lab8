@@ -1,0 +1,5 @@
+strategy  accuracy  macro_f1      ece       nll    brier  trainable_parameters  total_seconds  train_seconds gpu_peak_mb  mps_allocated_mb      rss_mb device            status  test_n  limited_steps  max_length adaptation
+  frozen     0.400  0.258030 0.218412 10.579415 0.794096                     0       4.989221       0.032881        None        584.936279  503.375000    mps SMOKE_PLACEHOLDER      40          False         128     frozen
+  linear     0.250  0.040000 0.053743  2.074115 0.845678                  6410       5.447562       0.368552        None          0.173828  470.765625    mps SMOKE_PLACEHOLDER      40          False         128     linear
+    lora     0.275  0.101842 0.144321  2.211019 0.880862                620810      26.434872      24.374068        None        734.406250  497.875000    mps SMOKE_PLACEHOLDER      40          False         128       lora
+    full     0.225  0.041860 0.095256  2.292750 0.897314             148391050       9.680297       5.236455        None       2576.221680 1588.343750    mps SMOKE_PLACEHOLDER      40           True         128       full

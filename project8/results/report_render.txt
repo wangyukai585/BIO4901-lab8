@@ -1,0 +1,47 @@
+pandoc 
+  to: latex
+  output-file: lab8.tex
+  standalone: true
+  pdf-engine: xelatex
+  variables:
+    graphics: true
+    tables: true
+  default-image-extension: pdf
+  toc: true
+  number-sections: true
+  
+metadata
+  block-headings: true
+  title: BIO4901 Lab 8：ESM-2 蛋白质亚细胞定位
+  subtitle: 参数适配、计算成本与同源性敏感评估
+  author: Yukai Wang
+  date: '2026-09-17'
+  lang: zh
+  documentclass: article
+  papersize: a4
+  fontsize: 10pt
+  geometry: margin=22mm
+  colorlinks: true
+  mainfont: Times New Roman
+  CJKmainfont: PingFang SC
+  
+
+Rendering PDF
+running xelatex - 1
+  This is XeTeX, Version 3.141592653-2.6-0.999998 (TeX Live 2026) (preloaded format=xelatex)
+   restricted \write18 enabled.
+  entering extended mode
+  
+running xelatex - 2
+  This is XeTeX, Version 3.141592653-2.6-0.999998 (TeX Live 2026) (preloaded format=xelatex)
+   restricted \write18 enabled.
+  entering extended mode
+  
+running xelatex - 3
+  This is XeTeX, Version 3.141592653-2.6-0.999998 (TeX Live 2026) (preloaded format=xelatex)
+   restricted \write18 enabled.
+  entering extended mode
+  
+
+Output created: lab8.pdf
+

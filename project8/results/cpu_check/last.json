@@ -1,0 +1,33 @@
+{
+  "epoch": 2,
+  "step": 26,
+  "config": {
+    "data": "/Users/wangyukai/course/BIO4901/lab8/project8/data/raw/deeploc_data.fasta",
+    "subset_size": 200,
+    "eval_size": 40,
+    "epochs": 2,
+    "batch_size": 16,
+    "device": "cpu",
+    "output_dir": "project8/results/cpu_check",
+    "model": "facebook/esm2_t30_150M_UR50D",
+    "revision": "a695f6045e2e32885fa60af20c13cb35398ce30c",
+    "max_length": 128,
+    "seed": 42,
+    "log_steps": 10,
+    "embedding_dir": "/Users/wangyukai/course/BIO4901/lab8/project8/data/embeddings",
+    "lr": 0.001,
+    "effective_batch_size": 16,
+    "gradient_checkpointing": true,
+    "precision": "auto",
+    "optimizer": "adamw",
+    "lora_rank": 8,
+    "freeze_layers": 0,
+    "min_length": 128,
+    "probe_only": false,
+    "skip_probe": false,
+    "max_steps": null,
+    "resume": "project8/results/cpu_check/last.pt"
+  },
+  "state_keys": 2,
+  "checkpoint_policy": "epoch boundary; optimizer + RNG + trainable tensors"
+}

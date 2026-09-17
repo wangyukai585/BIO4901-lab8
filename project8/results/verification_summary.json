@@ -1,0 +1,25 @@
+{
+  "hardware": {
+    "architecture": "arm64",
+    "ram_gib": 24,
+    "cuda_available": false,
+    "mps_available": true
+  },
+  "model": "facebook/esm2_t30_150M_UR50D",
+  "smoke": {
+    "train_n": 200,
+    "test_n": 40,
+    "max_residues": 128,
+    "linear_epochs": 2,
+    "lora_epochs": 2,
+    "full_optimizer_steps": 1
+  },
+  "pytest_passed": 9,
+  "snakemake_jobs_passed": 8,
+  "cpu_resume_bitwise_verified": true,
+  "pdf_pages": 8,
+  "pdf_visual_review": "all final pages inspected",
+  "cuda_kernel_validation": "pending on user server",
+  "linux_lock_resolution": "passed, not installed",
+  "raw_data_committed": false
+}
