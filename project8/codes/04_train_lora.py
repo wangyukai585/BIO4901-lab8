@@ -1,3 +1,5 @@
 #!/usr/bin/env python
 from train_core import main
-if __name__=='__main__': main('lora')
+
+if __name__ == "__main__":
+    main("lora")
