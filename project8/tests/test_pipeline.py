@@ -160,3 +160,23 @@ def test_probe_retries_oom_and_discards_probe_model(monkeypatch, tmp_path):
     out = tc.probe_memory(a, torch.device("cpu"), logger(tmp_path))
     assert attempts == [4, 2, 1]
     assert [x["success"] for x in out] == [False, False, True]
+
+
+def test_formal_report_refuses_smoke_results():
+    import subprocess
+    import sys
+
+    before = (ROOT / "lab8.qmd").read_bytes()
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "codes/10_write_course_report.py"),
+            "--results_dir",
+            str(ROOT / "results"),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode != 0
+    assert "completed full-data runs" in result.stderr
+    assert (ROOT / "lab8.qmd").read_bytes() == before
