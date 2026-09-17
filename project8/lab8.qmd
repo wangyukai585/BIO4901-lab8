@@ -1,8 +1,6 @@
 ---
-title: "BIO4901 Lab 8：ESM-2 蛋白质亚细胞定位"
-subtitle: "参数适配、计算成本与同源性敏感评估"
+title: "BIO4901 Lab 8：用 ESM-2 预测蛋白质亚细胞定位"
 author: "Yukai Wang"
-date: "2026-09-17"
 lang: zh
 format:
   pdf:
@@ -11,7 +9,6 @@ format:
     papersize: a4
     fontsize: 10pt
     geometry: margin=22mm
-    toc: true
     number-sections: true
     colorlinks: true
     mainfont: "Times New Roman"
@@ -20,125 +17,140 @@ format:
       text: |
         \usepackage[ruled,vlined]{algorithm2e}
         \usepackage{float}
-        % Optional course style: place bio4901.sty in project8/.
         \IfFileExists{bio4901.sty}{\usepackage{bio4901}}{}
 execute:
   enabled: false
 ---
 
-# 背景介绍
+# 我们想解决什么问题？
 
-蛋白质序列包含与折叠、运输及定位相关的信息。ESM-2 通过掩码语言建模学习序列表征 [2]，但预训练表征能否在有限标注条件下支持定位分类，以及适配带来的提升是否值得额外计算成本，需要实证比较。本实验采用固定版本的 `facebook/esm2_t30_150M_UR50D`，比较 Frozen embedding + kNN、Linear probing、LoRA 和全参数微调。
+蛋白质需要到达正确的细胞位置才能发挥作用。这个实验尝试只根据氨基酸序列，判断蛋白质属于细胞核、线粒体等哪一类位置。我们使用预训练的 ESM-2 150M，比较四种使用方式：直接使用固定表征、只训练线性分类层、LoRA，以及全参数微调。
 
-研究问题包括：不同适配策略在官方同源簇划分下的预测表现如何；参数量、训练时间与显存如何变化；高 benchmark 分数是否对应可靠校准、长度泛化及合理的定位信号使用。
+重点不只是看谁分数高，也看提升需要多少参数、时间和显存，以及模型在少数类别、不同长度序列上的表现。
 
-**本报告当前为本地冒烟验证稿；结果不能用于回答策略优劣。所有正式结论待 GPU 全量运行后补充。**
+# 数据和实验方法
 
-# 实验数据与方法
 
-## 数据来源与标签清洗
+DeepLoc-1.0 官方文件有 14,004 条序列。我们排除 146 条 `Cytoplasm-Nucleus` 双定位记录，保留 13,858 条用于十分类。原标签 `Plastid` 按课程命名映射为 Chloroplast，但原注释的范围比叶绿体更宽。
 
-使用 DeepLoc-1.0 官方 FASTA [1]。原文件有 14,004 条记录；146 条 `Cytoplasm-Nucleus` 双定位记录不适用于本实验十类单标签设定，明确排除，保留 13,858 条。header 中 `-S/-M/-U` 表示 soluble、membrane、unknown，独立保存为生物学分组变量，不参与定位标签预测。原始 `Plastid` 映射为课程所用 Chloroplast，但该名称映射不代表原注释都精确限定于叶绿体。
+训练集 11,085 条，测试集 2,773 条，严格沿用 header 的官方 `test` 标记。原论文按同源序列簇分组后划分数据 [1]；我们没有重新随机切分，也不根据测试分数挑选模型。完整序列摘要检查发现跨集合完全重复为 0。这项检查能发现重复序列，但不能替代完整的同源性审计。
 
-![完整数据集的类别分布与长度分布。此 QC 使用全部保留记录，而非 subset。](results/images/fig0_data_qc.pdf){width=100% fig-pos="H"}
+![完整数据集的类别与长度分布。少数类别的结果需要更谨慎解释。](results/images/fig0_data_qc.pdf){width=100% fig-pos="H"}
 
-## Leakage-aware validation
+## 四种方法有什么区别？
 
-只通过 header 末尾独立的 `test` token 识别官方测试记录，不随机重分 train/test。原论文第 2.3.1 节说明：使用 PSI-CD-HIT，以 30% identity 或 $10^{-6}$ E-value 条件聚类，并要求覆盖较短序列的 80%；同源簇整体分入五折，其中一折留出测试 [1]。本项目继承这一划分，不声称自行重现该聚类过程。
-
-SHA-256 完整序列摘要检查显示跨集合重复数为零；训练内部有 49 条重复序列，测试内部有 5 条。该审计可以发现完全相同序列泄漏，**不能证明所有跨集合序列都低于某一同源性阈值**。ESM 预训练语料可能包含相关蛋白，不能据此排除预训练重叠。测试内部相关性也限制序列级 bootstrap 的解释。
-
-FASTA 不提供原训练集的四折簇 ID。本实现固定学习率和训练轮数、使用最后 checkpoint，不使用测试分数进行 early stopping、超参数选择或校准参数拟合。若后续需要调参，须在官方训练集内部另外获得/构建同源簇验证折，不能反复查看本测试集选模型。
-
-## 表征与适配策略
-
-使用非 padding、非 BOS/EOS token 的平均隐状态，维度为 640。长序列保留前半段和后半段，删除中部，以尽量保留 N/C 端运输信号；本地上限为 128 个残基，全量默认 512，可通过 CLI 修改到 1022。截断比例保存在 QC summary；输入截断本身是实验局限。
-
-| 策略 | 可训练部分 | 分类方式 |
+| 方法 | 更新什么 | 具体设置 |
 |:--|:--|:--|
-| Frozen | 无梯度训练参数 | 固定表征，余弦距离 5-NN，距离加权投票 |
-| Linear | 640×10 权重与 10 维偏置 | 固定表征上的 softmax 线性层 |
-| LoRA | query/value 低秩矩阵及分类头 | rank 8，alpha 16，dropout 0.05 |
-| Full FT | 编码器和分类头 | 更新用于分类的全部参数；未使用 contact head 冻结 |
+| Frozen + kNN | 不更新 ESM | 平均表征 + 余弦距离 5-NN |
+| Linear probing | 只更新分类头 | 640 维输入，10 类 softmax |
+| LoRA | 低秩矩阵和分类头 | query/value，rank 8，alpha 16 |
+| Full fine-tuning | 编码器与分类头 | 不使用的 contact head 冻结 |
 
-Frozen 分类器仍需存储参考样本，零可训练参数不等于零存储或推断成本。Linear 的成本计入共享 embedding 提取；不同方法使用相同训练/测试 ID 和预处理。若显存降级修改最大长度或冻结层数，元数据明确记录，不能继续作为严格同预算 full-FT 比较。
+使用同一个 ESM-2 模型版本。各方法输入最多 512 个残基；较长序列保留首尾、删除中间，以尽量保留定位信号。表征平均时排除 padding 和特殊 token。三种训练方法均按预先设定的 10 轮训练，使用最后 checkpoint；测试集只在训练结束后评估。
 
-## LoRA 算法
-
-对目标线性映射 $W_0\in\mathbb{R}^{d_{out}\times d_{in}}$，令
-$W=W_0+(\alpha/r)BA$，其中 $A\in\mathbb{R}^{r\times d_{in}}$、$B\in\mathbb{R}^{d_{out}\times r}$；固定 $W_0$，仅更新 $A,B$ 和分类头 [3]。
+LoRA 的做法是保留原权重 $W_0$，增加一个小的更新项：$W=W_0+(\alpha/r)BA$。训练时只更新 $A$、$B$ 和分类头，因此需要更新的参数少得多 [3]。
 
 ```{=latex}
 \begin{algorithm}[H]
-\caption{LoRA adaptation for protein localization}
-\KwIn{Official training sequences $D$, pretrained encoder $W_0$, rank $r=8$}
-\KwOut{Adapter matrices $A,B$ and classification head $C$}
-Freeze $W_0$; initialize $A$ randomly and $B=0$; initialize $C$\;
-\For{each fixed training epoch}{
-  \For{each accumulation group of mini-batches}{
-    Zero optimizer gradients\;
-    \For{each mini-batch $(x,y)$}{
-      Preserve sequence termini; tokenize $x$\;
-      Compute encoder states with $W_0+(\alpha/r)BA$\;
-      Mean-pool valid residue states and compute logits using $C$\;
-      Accumulate sample-weighted cross-entropy gradients\;
-    }
-    Clip gradients; update $A,B,C$ only\;
+\caption{LoRA 训练流程}
+\KwIn{官方训练集、预训练 ESM-2、rank $r=8$}
+冻结原模型权重，初始化低秩矩阵 $A,B$ 和分类头\;
+\For{每一轮训练}{
+  \For{每组 mini-batch}{
+    保留序列两端并分词，计算 ESM-2 表征\;
+    对有效残基求平均，通过分类头得到预测\;
+    累积交叉熵梯度，更新 $A,B$ 和分类头\;
   }
-  Save trainable tensors, optimizer state and random-number states\;
+  保存 checkpoint\;
 }
-Evaluate the final checkpoint on the untouched official test set\;
+用最后 checkpoint 评估官方测试集\;
 \end{algorithm}
 ```
 
-## 设备、成本与可复现性
 
-设备优先级为 CUDA、MPS、CPU。本地使用 ARM64 Mac 的 MPS，24 GiB 统一内存。混合精度先检测 bf16 可用性，否则回退 fp32。CUDA Full FT 默认开启 bf16、gradient checkpointing、8-bit AdamW、batch 4、有效 batch 16。显存预检不仅运行微型输入，还运行配置的最大形状并执行 optimizer step，以包括惰性分配的优化器状态；探测更新随后丢弃。OOM 降级依次减 batch、减长度、冻结前层，并记录改变后的方法名。
+## 在什么机器上运行？
 
-日志每 30 秒心跳输出运行时长、ETA、step/loss/accuracy 和内存；训练以 epoch 为单位保存可恢复状态。本地没有 CUDA，8-bit optimizer 与 CUDA peak memory 尚未实机验证。MPS 当前分配内存不是 CUDA peak 显存，也不等于设备总内存峰值。
+正式实验使用 **NVIDIA GeForce RTX 3080 Ti，12 GiB 显存**。Python 3.11.14，PyTorch 2.6.0+cu124，bitsandbytes 0.45.5。LoRA 和 Full FT 使用 bf16、梯度检查点和 8-bit AdamW；Linear 的分类头使用普通 AdamW；Full FT 的实际 batch 为 4，有效 batch 为 16。所有样本、版本和参数均保存在 run.json 中。
 
-## 指标与统计推断
+若显存不足，代码依次减小 batch、缩短输入、冻结前层；实际是否发生降级以运行记录为准。
 
-报告 accuracy、固定十类 macro F1、10 个等宽区间 top-label ECE、NLL 与多分类 Brier score。可靠性图仅绘制非空区间。使用 1,000 次按真实类别分层的**配对** bootstrap，四种方法共享相同的重采样样本，输出单方法与两两差值的 95% percentile CI。区间条件于测试样本和固定类别数量，未包含训练 seed 方差；不是同源簇级 CI。测试集未用于 temperature scaling。
+本次 Full FT 的实际适配类型为 `full`，冻结前层数为 0。
 
 # 实验流程
 
-![数据至评估与统计的 DAG；四个适配分支共用官方测试样本。](results/images/fig6_workflow.pdf){width=100% fig-pos="H"}
+![四条分支使用相同的官方测试集；统一评估与统计。](results/full_run/images/fig6_workflow.pdf){width=85% fig-pos="H"}
 
-Snakemake 通过 `subset=True/False` 切换本地冒烟和服务器全量配置。原始 FASTA、embedding 与大权重均不提交，代码、QC、CSV、矢量图与 checkpoint 配置提交。下载文件 SHA-256、模型不可变 revision、软件版本、设备和运行参数记录在对应 JSON。
+# 实验结果
 
-# 实验结果与分析
+## 总体表现
 
-{{< include results/report_results.qmd >}}
+| 方法 | Accuracy | Macro F1 | ECE ↓ | 训练参数 | 时间/min | CUDA峰值/GiB |
+|:--|--:|--:|--:|--:|--:|--:|
+| Frozen + kNN | 0.693 | 0.574 | 0.063 | 0 | 6.9 | 0.77 |
+| Linear | 0.753 | 0.590 | 0.043 | 6,410 | 6.5 | 0.77 |
+| LoRA | 0.771 | 0.614 | 0.145 | 620,810 | 107.4 | 1.07 |
+| Full FT | 0.793 | 0.685 | 0.153 | 148,391,050 | 107.8 | 2.12 |
 
-## 生物学解释框架
+本次单次运行中，**Full fine-tuning 的 Macro F1 最高，为 0.685**；固定表征基线为 0.574。Macro F1 对每一类同等计分，因此能补充总体 accuracy 被大类别主导的问题。
 
-校准度与分类正确率应同时解读：弱分类器也可能有较小 ECE，不能仅据 ECE 判断可用性。核定位与胞质定位的混淆可能反映定位信号重叠，但本实验不能从混淆矩阵直接证明分子机制。PCA 仅展示表示结构，不是聚类质量或定位因果机制的证据。
+时间包含模型准备、训练、推断与保存；Linear 计入共享表征提取成本。显存为 PyTorch 记录的 CUDA 峰值分配量，不等同于 nvidia-smi 的全部设备占用。
 
-`robustness_by_group.csv` 提供长度组、膜/可溶组与每类表现，并加入截断后两端各最多 10 个残基替换为 X 的诊断。端点扰动若使分数下降，仅提示模型对相关输入敏感；X 并非真实生物突变，需结合真实信号肽、定位序列注释进行后续验证。小样本分组结果尤其不稳定。
+![四种方法需要更新的参数量。kNN 不更新参数，但仍需存储参考样本。](results/full_run/images/fig1_parameter_efficiency.pdf){width=95% fig-pos="H"}
+
+![性能与参数量、时间的关系；虚线仅连接不被其他点同时超越的方案。](results/full_run/images/fig2_performance_cost.pdf){width=95% fig-pos="H"}
+
+**参数少不一定训练快。** LoRA 更新参数仅为 Full FT 的 0.42%，峰值显存约为其 50%，但二者均需通过 Transformer 计算梯度，本次总耗时分别为 107.4 和 107.8 分钟，几乎相同。Linear 连同表征提取只需 6.5 分钟，是低预算下很有价值的起点。这里比较的是同一硬件、固定轮数的实测，不代表经过调参后的最优方案。
+
+## 哪些类别容易，哪些类别困难？
+
+![每个定位类别的 F1；括号标出测试样本数。](results/full_run/images/fig8_class_f1.pdf){width=100% fig-pos="H"}
+
+![Frozen 与 Full FT 的预测错误分布：数字是样本数，颜色按行归一化。](results/full_run/images/fig4_confusion_matrices.pdf){width=100% fig-pos="H"}
+
+类别图能区分“总体提高”和“每类都提高”。少数类别样本更少，分数容易波动；相近位置的混淆只能提示值得进一步检查的现象，不能直接证明某种生物机制。
+
+Full FT 中，Chloroplast 的 F1 为 0.920，而 Lysosome/Vacuole 和 Peroxisome 分别为 0.318、0.449；后两类测试样本只有 64 和 30 条。混淆矩阵还显示，508 条 Cytoplasm 中有 93 条被判为 Nucleus，808 条 Nucleus 中有 77 条被判为 Cytoplasm。这说明更高的总分仍不能消除类别不平衡与相近位置的区分难题。
+
+## 置信度与稳定性
+
+![预测置信度与实际正确率的关系；越接近对角线越一致。](results/full_run/images/fig3_calibration.pdf){width=85% fig-pos="H"}
+
+ECE 衡量置信度与正确率的差距，越小越好。但低准确率模型也可能有较小 ECE，因此需要一起看分类表现；本实验没有用测试集调校准参数。
+
+本次 Linear 的 ECE 为 0.043，低于 LoRA 的 0.145 和 Full FT 的 0.153。Full FT 虽然分类更准，却更容易给错误预测很高的信心。因此，若需要根据置信度决定是否人工复核，应在独立验证数据上研究校准，不能直接把 softmax 当成可靠概率。Frozen 的 5-NN 投票还可能给真实类别零概率，导致 NLL 很大；评价脚本仅为数值稳定做概率裁剪。
+
+![不同长度组的准确率，以及遮蔽序列两端后的变化。](results/full_run/images/fig9_robustness.pdf){width=100% fig-pos="H"}
+
+长度分组用于检查模型是否只擅长短序列。端点实验把两端各最多 10 个残基替换为 X，用来观察对端点信息的敏感性；这不是实际生物突变，也不能单独证明模型识别了定位信号。
+
+Full FT 对不超过 128 残基的序列准确率为 84.1%，对超过 512 残基的序列为 77.1%。长度组的类别构成也不同，不能把差异全部归因于截断。遮蔽端点后，其准确率从 79.3% 降为 73.2%，与端点信息有帮助的解释一致，但也可能包含输入分布变化的影响。
+
+![1,000 次配对 bootstrap 得到的 Macro F1 差值区间。](results/full_run/images/fig10_paired_intervals.pdf){width=95% fig-pos="H"}
+
+每次重采样对四种方法使用相同测试 ID，并保持观测类别比例。区间跨过零表示这次重采样下差异方向不稳定。区间没有包含训练种子的变化，也不是同源家族独立重采样，不能把它当成所有不确定性的完整范围。
+
+Full FT 相对 LoRA 的 Macro F1 提升为 0.071，配对 95% CI 为 [0.045, 0.097]，区间未跨零。相反，Linear 与 LoRA 的 Macro F1 差异区间跨零，因此这一次实验不足以稳定区分这两种方法的 Macro F1。这里列出的区间是逐项区间，未进行多重比较校正。
+
+## 表征与训练过程
+
+![只在训练表征上拟合 PCA，再展示测试蛋白的投影。](results/full_run/images/fig5_embedding_pca.pdf){width=95% fig-pos="H"}
+
+![训练 loss 和准确率随 epoch 的变化。](results/full_run/images/fig7_training_curves.pdf){width=95% fig-pos="H"}
+
+PCA 是高维表征的二维投影，只适合观察分布，不应凭图中是否成团来判断模型质量。训练曲线用于确认优化过程；最终泛化表现仍以独立测试集为准。
 
 # 讨论与总结
 
-## 局限性
+这次实验完成了从下载与清洗、四种适配，到独立测试、统计与作图的完整流程。按本次 Macro F1，Full fine-tuning 表现最好；实际选择还应结合图中的时间、显存与少数类表现，而不是只看一个分数。
 
-当前仅完成本地 pipeline 检查；Full FT 只更新一个 batch，其他方法只有 200 条训练样本、两轮训练，不能进行科学排名。正式运行须保留原测试集合、补齐 GPU 实测峰值和训练成本，并尽可能增加训练随机种子。
+需要保留三点限制：第一，只有一个训练种子，不能保证换一次训练仍有同样排名；第二，长序列截断和单标签设定简化了真实定位问题；第三，官方同源划分降低了监督数据泄漏风险，但不能排除 ESM 预训练语料中的重叠。后续最值得补充的是多个随机种子，以及带真实定位信号注释的分析。
 
-数据类别不平衡、少数类数量有限；序列截断可能删除功能信号。单标签任务排除了双定位蛋白，不覆盖复杂细胞状态与动态运输。继承的同源簇划分降低监督训练泄漏风险，但不排除预训练重叠；序列级重采样亦可能低估同源相关性。单一物种集合与时期的注释不能代表所有真实应用分布。
-
-自动冻结层会改变问题设定，必须作为部分层微调单独报告。CPU/MPS 的时间和内存不能外推 RTX 3090 Ti；预检并不保证所有生产负载都不会 OOM。
-
-## 伦理与数据声明
-
-数据来自公开的研究资源，依来源规范引用；不上传原始序列到 git。工作用于教学研究，不用于临床或病原体工程决策。本地冒烟结果均明示为占位，不伪造全量或 CUDA 验证结果。代码与报告草稿由 AI 辅助实现，作者应审核实验配置、数据解释和最终提交内容。
-
-## 待全量运行后回答
-
-正式结论应围绕宏平均性能提升是否稳定、增益是否足以解释额外计算成本、对少数类和长序列是否泛化，以及校准与端点扰动是否一致，而非只比较一项总体 accuracy。
+**数据与伦理声明：** 使用公开研究数据，引用原作者，原始序列不提交到 GitHub。本工作用于课程学习，不用于临床决策。代码与初稿由 AI 辅助，最终实验解释和提交内容由作者审核。
 
 # 参考文献
 
-1. Almagro Armenteros JJ, Sønderby CK, Sønderby SK, Nielsen H, Winther O. DeepLoc: prediction of protein subcellular localization using deep learning. *Bioinformatics*. 2017;33(21):3387–3395. [doi:10.1093/bioinformatics/btx431](https://doi.org/10.1093/bioinformatics/btx431).
-2. Lin Z, Akin H, Rao R, et al. Evolutionary-scale prediction of atomic-level protein structure with a language model. *Science*. 2023;379:1123–1130. [doi:10.1126/science.ade2574](https://doi.org/10.1126/science.ade2574).
-3. Hu EJ, Shen Y, Wallis P, et al. LoRA: Low-Rank Adaptation of Large Language Models. *ICLR*. 2022. [arXiv:2106.09685](https://arxiv.org/abs/2106.09685).
-4. [DeepLoc-1.0 官方数据说明](https://services.healthtech.dtu.dk/services/DeepLoc-1.0/).
-5. [ESM-2 150M 模型与权重](https://huggingface.co/facebook/esm2_t30_150M_UR50D).
+1. Almagro Armenteros JJ, et al. DeepLoc: prediction of protein subcellular localization using deep learning. *Bioinformatics*. 2017;33:3387–3395. [doi:10.1093/bioinformatics/btx431](https://doi.org/10.1093/bioinformatics/btx431).
+
+2. Lin Z, et al. Evolutionary-scale prediction of atomic-level protein structure with a language model. *Science*. 2023;379:1123–1130. [doi:10.1126/science.ade2574](https://doi.org/10.1126/science.ade2574).
+
+3. Hu EJ, et al. LoRA: Low-Rank Adaptation of Large Language Models. *ICLR*. 2022. [arXiv:2106.09685](https://arxiv.org/abs/2106.09685).

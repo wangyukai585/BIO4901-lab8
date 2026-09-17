@@ -1,12 +1,19 @@
 # BIO4901 Lab 8 — ESM-2 protein localization
 
-**这些结果是在本地小规模 subset 冒烟测试基础上生成的代码，完整实验结果将在 GPU 服务器运行后更新。** 当前所有性能图为 `[PLACEHOLDER - 待服务器全量运行后替换]`；Full FT 仅一个 batch，不能用于判断方法排名。
+**正式全量实验已于 2026-09-18 01:42（北京时间）完成，报告已更新为服务器真实结果。**
 
-## 服务器运行进度
+代码先通过本地小规模 subset 冒烟测试，再在 **RTX 3080 Ti 12 GiB** 上运行完整官方划分（11,085 train / 2,773 test）。三种训练策略均完成 10 epochs。正式结果位于 [`results/full_run/`](results/full_run/)，报告为 [`lab8.pdf`](lab8.pdf) 和 [`lab8.qmd`](lab8.qmd)。根 `results/metrics_table.csv` 与 `results/images/fig1*` 等保留本地冒烟记录，仍带占位标识，**不要将它们用于正式方法排名**；`results/images/fig0_data_qc.*` 是完整数据 QC。
 
-2026-09-17 21:59 已在 **RTX 3080 Ti 12 GiB** 启动全量运行，保持完整数据与 10 epochs。CUDA bf16、bitsandbytes 0.45.5 与 Full FT 最大配置预检已实测通过：batch 4、512 残基、未冻结前层，PyTorch 峰值分配约 1.80 GiB。训练在 tmux 后台接续运行；当前仓库主结果表与 PDF 仍是此前的冒烟占位，待四阶段完成后统一更新。
+| 策略 | Accuracy | Macro F1 | ECE ↓ | 总耗时/min | CUDA峰值/GiB |
+|---|---:|---:|---:|---:|---:|
+| Frozen + kNN | 0.693 | 0.574 | 0.063 | 6.9 | 0.77 |
+| Linear probing | 0.753 | 0.590 | 0.043 | 6.5 | 0.77 |
+| LoRA | 0.771 | 0.614 | 0.145 | 107.4 | 1.07 |
+| Full fine-tuning | 0.793 | 0.685 | 0.153 | 107.8 | 2.12 |
 
-已增加各类 F1、长度/端点鲁棒性与配对 CI 图；正式报告使用 `codes/10_write_course_report.py --results_dir results/full_run` 生成更简洁的中文图文版本。硬件与预检证据见 `results/server_progress/`、`results/server_probe/`。
+Full FT 的 Macro F1 最高；Linear 的校准和成本更有优势。LoRA 更新参数只有 Full FT 的 0.42%，但本次训练耗时接近。Full FT 相对 LoRA 的 Macro F1 差值 0.071，配对 bootstrap 95% CI [0.045, 0.097]；区间只覆盖单次训练下的测试序列重采样不确定性。完整指标、配对区间、类别 F1、校准、长度与端点扰动图见正式结果目录。
+
+CUDA bf16、AdamW8bit、batch 4、有效 batch 16、512 残基和 gradient checkpointing 均实测通过，未触发 OOM 降级。硬件和训练源代码版本见 `results/full_run/server_environment.json`；逐方法配置见 `run.json`。原始数据和模型权重不提交。
 
 ## 项目与数据
 
@@ -21,7 +28,9 @@ project8/
   codes/05_train_full_ft.py           # full FT + CUDA preflight/OOM fallback
   codes/06_evaluate_and_bootstrap.py  # calibration, paired bootstrap, robustness
   codes/07_make_figures.py           # PDF/SVG/300dpi PNG
-  codes/08_update_report.py          # 将指定运行的结果填入报告 include
+  codes/08_update_report.py          # 历史冒烟报告 include
+  codes/09_extra_figures.py          # 类别 F1、鲁棒性、配对 CI
+  codes/10_write_course_report.py    # 正式中文图文报告
   codes/utils.py, train_core.py, frozen_knn.py
   scripts/Snakefile
   tests/test_pipeline.py
@@ -48,7 +57,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-本次 Mac 环境位于仓库根的 `.venv/`，激活命令为 `source ../.venv/bin/activate`。版本在 environment.yml 精确固定；macOS 完整实际安装快照另存 lock 文件，**不要在 Linux 直接复用 macOS 的传递依赖快照**。`requirements-lock-linux.txt` 是为 Linux x86_64 / Python 3.11 解析的完整依赖锁（包括 CUDA 12.4 依赖），可在对应服务器 venv 中 `pip install -r requirements-lock-linux.txt`。它通过依赖解析，尚未在 CUDA 机器安装/实跑。bitsandbytes 0.45.5 仅在 Linux x86_64 安装；MPS/CPU 使用 torch AdamW。不要求 Mac 有 CUDA。
+本次 Mac 环境位于仓库根的 `.venv/`，激活命令为 `source ../.venv/bin/activate`。版本在 environment.yml 精确固定；macOS 完整实际安装快照另存 lock 文件，**不要在 Linux 直接复用 macOS 的传递依赖快照**。`requirements-lock-linux.txt` 是为 Linux x86_64 / Python 3.11 解析的完整依赖锁（包括 CUDA 12.4 依赖），可在对应服务器 venv 中 `pip install -r requirements-lock-linux.txt`。已在本次 Linux CUDA 服务器安装并完成全量运行。bitsandbytes 0.45.5 仅在 Linux x86_64 安装；MPS/CPU 使用 torch AdamW。不要求 Mac 有 CUDA。
 
 ## 本地冒烟：一条命令
 
@@ -58,7 +67,7 @@ snakemake -s scripts/Snakefile --cores 1 --config subset=True
 
 默认训练 200、测试 40，十类均至少保留一条，种子固定；采样只发生在原集合内部。Linear/LoRA 两轮，Full FT 一个 optimizer step、batch 1；最大残基数 128。全量 QC 始终使用全部数据。已有产物时 Snakemake 跳过已完成节点；完整复验加 `--forceall`。串行执行避免 GPU 资源竞争。
 
-## RTX 3090 Ti 全量复现
+## CUDA 服务器全量复现（本次为 RTX 3080 Ti）
 
 在服务器 clone 后，进入 `project8/` 并安装上面的环境。建议先确认 `nvidia-smi` 正常及当前 PyTorch wheel 能使用 CUDA：
 
@@ -96,11 +105,12 @@ python codes/04_train_lora.py --max_length 512 --batch_size 4 --effective_batch_
 ```bash
 python codes/06_evaluate_and_bootstrap.py --output_dir results/full_run --n_bootstrap 1000
 python codes/07_make_figures.py --output_dir results/full_run --embedding_dir data/embeddings_full
-python codes/08_update_report.py --results_dir results/full_run
+python codes/09_extra_figures.py --output_dir results/full_run
+python codes/10_write_course_report.py --results_dir results/full_run
 quarto render lab8.qmd --to pdf
 ```
 
-这些命令可替换为 `results` 和 `data/embeddings` 重画当前本地报告。报告脚本自动更新结果表、配对 CI 和图路径；QMD 正文保留方法与讨论框架。全量完成后作者仍需更新正文中标记的本地/占位说明和科学结论，不能自动把占位讨论当正式结论。
+正式报告生成器会拒绝不完整数据或冒烟运行，自动读取结果和图路径；重新训练后仍须检查分析文字与 PDF 排版。旧的 `08_update_report.py` 仅用于历史冒烟报告 include。使用 `bash scripts/run_server.sh` 可自动记录硬件、预检、运行完整 DAG 并生成附加图；报告最后在安装 Quarto/TeX 的机器渲染。
 
 本地已使用 Quarto 1.7.32、XeLaTeX 渲染。`bio4901.sty` 在 YAML 的 `IfFileExists` 位置可选加载；用户放入 project8 根目录后重新 render。Linux 字体可用：`quarto render lab8.qmd -M mainfont='DejaVu Serif' -M CJKmainfont='Noto Serif CJK SC'`（先安装相应字体及 TeX/algorithm2e）。缺课程样式时不会冒充已应用课程模板。
 
@@ -115,4 +125,4 @@ snakemake -s scripts/Snakefile --cores 1 --config subset=False -n
 
 已实测：MPS ESM bf16 forward/backward、Frozen、Linear/LoRA 两轮、Full FT 单 batch、checkpoint 参数恢复、梯度、完整 Snakemake smoke DAG、统计/图表与 PDF。CUDA/bitsandbytes 内核与预检已在 RTX 3080 Ti 实测通过；真实 OOM 未出现，降级顺序以注入异常的测试覆盖。
 
-`.gitignore` 排除 raw/processed、embedding、权重、虚拟环境和工具安装；保留小 checkpoint JSON、CSV 与图。仓库只完成本地分模块提交，无 remote/push 操作。若 Mac 系统 Git 提示 Xcode 许可，可在已安装 Command Line Tools 的本机使用 `DEVELOPER_DIR=/Library/Developer/CommandLineTools git ...`。推送前在仓库根检查 `git status`。
+`.gitignore` 排除 raw/processed、embedding、权重、虚拟环境和工具安装；保留小 checkpoint JSON、CSV 与图。已按用户授权分模块提交并推送到 GitHub。若 Mac 系统 Git 提示 Xcode 许可，可在已安装 Command Line Tools 的本机使用 `DEVELOPER_DIR=/Library/Developer/CommandLineTools git ...`。推送前在仓库根检查 `git status`。

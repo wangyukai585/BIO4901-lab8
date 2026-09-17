@@ -76,3 +76,16 @@ This is a curated reproducibility log, not a complete terminal transcript.
    CUDA bf16 + AdamW8bit preflight with batch 4 / 512 residues passed; peak 1844.99 MiB.
    LoRA formal training entered epoch 1/10 and nonzero adapter gradients passed.
    Results remain pending; do not interpret existing smoke PDF as full experiment output.
+
+10. Full experiment completion, 2026-09-18
+    Server scripts/run_server.sh completed at 01:42:38 +08:00, all 7 full DAG jobs passed.
+    Four FULL_RUN strategies cover identical 2773 official test IDs; all training stages completed 10 epochs.
+    Actual optimizer AdamW8bit, bf16, batch 4, 512 residues; full adaptation without OOM fallback.
+    Downloaded result CSV/JSON/figures and logs via SSH, excluding .pt/.bin/.safetensors.
+    Verified prediction probabilities, ID alignment, coverage, epochs and recomputed accuracy/macro F1.
+    .venv/bin/python -m pytest project8/tests -q : 10 passed
+    Improved formal plot labels and generated concise report with real calibration/cost/CI/class/robustness analysis.
+    .venv/bin/python project8/codes/10_write_course_report.py --results_dir project8/results/full_run
+    .tools/quarto/bin/quarto render project8/lab8.qmd --to pdf
+    Formal PDF rendered and pages visually reviewed with bundled pdftoppm.
+    Earlier chronological smoke/pending entries describe historical stages, not current status.
