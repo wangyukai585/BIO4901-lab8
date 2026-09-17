@@ -1,0 +1,64 @@
+BIO4901 Lab 8 — commands actually executed locally, 2026-09-17 Asia/Shanghai
+Workspace: /Users/wangyukai/course/BIO4901/lab8
+This is a curated reproducibility log, not a complete terminal transcript.
+
+1. Hardware and environment
+   uname -m; sw_vers; sysctl -n hw.memsize
+   Result: arm64, macOS 26.6.2, 25769803776 bytes RAM (24 GiB)
+   uv venv --python 3.11 .venv
+   uv pip install --python .venv/bin/python [exact core versions recorded in project8/requirements.txt; Mac skips bitsandbytes]
+   Actual Python 3.11.14, torch 2.6.0, CUDA false, MPS available true.
+   Executed MPS matrix forward/backward and ESM bf16 autocast backward with gradient checkpointing.
+   Evidence: results/mps_precision_check.json, results/esm_mps_precision_check.json
+   uv pip freeze --python .venv/bin/python > project8/requirements-lock-macos.txt
+
+2. Data
+   .venv/bin/python project8/codes/01_download_data.py
+   First parser run exposed Cytoplasm-Nucleus and Plastid labels. Implemented explicit exclusion/mapping and reran.
+   Source: https://services.healthtech.dtu.dk/services/DeepLoc-1.0/deeploc_data.fasta
+   SHA-256 and counts are in results/qc/summary.json; original sequences excluded from git.
+
+3. Initial individual stage checks (fp32 MPS)
+   .venv/bin/python project8/codes/02_extract_embeddings.py --subset_size 200 --eval_size 40 --max_length 128 --batch_size 4 --log_steps 10
+   .venv/bin/python project8/codes/03_train_linear_probe.py --subset_size 200 --eval_size 40 --max_length 128 --batch_size 16 --epochs 2 --log_steps 5
+   .venv/bin/python project8/codes/04_train_lora.py --subset_size 200 --eval_size 40 --max_length 128 --batch_size 4 --epochs 2 --effective_batch_size 16 --log_steps 5
+   .venv/bin/python project8/codes/05_train_full_ft.py --subset_size 200 --eval_size 40 --max_length 128 --batch_size 1 --epochs 1 --effective_batch_size 1 --max_steps 1 --log_steps 1
+   Each stage passed. Initial console logs kept separately; current run.json comes from final DAG rerun.
+
+4. Final unified workflow, after numeric/device fixes (MPS bf16 for trainable strategies)
+   cd project8
+   ../.venv/bin/snakemake -s scripts/Snakefile --cores 1 --config subset=True --forceall
+   All 8 jobs passed. Console: results/snakemake_smoke_execution.txt
+   ../.venv/bin/snakemake -s scripts/Snakefile --cores 1 --config subset=False -n
+   Full-mode DAG validated by dry run only; NO full training executed locally.
+   ../.venv/bin/python codes/06_evaluate_and_bootstrap.py
+   ../.venv/bin/python codes/07_make_figures.py
+   Re-executed evaluation/figures after float64 probability normalization to remove CSV-roundoff warnings.
+
+5. Additional checks
+   From workspace root:
+   .venv/bin/python -m pytest project8/tests -q
+   .venv/bin/python project8/codes/05_train_full_ft.py --probe_only --device mps --max_length 128 --batch_size 1 --output_dir project8/results/local_probe
+   .venv/bin/python project8/codes/03_train_linear_probe.py --subset_size 200 --eval_size 40 --max_length 128 --batch_size 16 --epochs 1 --device cpu --output_dir project8/results/cpu_check
+   .venv/bin/python project8/codes/03_train_linear_probe.py --subset_size 200 --eval_size 40 --max_length 128 --batch_size 16 --epochs 2 --device cpu --output_dir project8/results/cpu_check --resume project8/results/cpu_check/last.pt
+   Compared resumed CPU training with independent uninterrupted 2-epoch run by exact equality of checkpoint tensors.
+   CUDA/bitsandbytes kernels unavailable locally. OOM retry tested by injected RuntimeError in unit test; actual CUDA preflight must run on server.
+
+6. Report
+   Downloaded official Quarto 1.7.32 macOS distribution into ignored .tools/quarto (no global installation).
+   .venv/bin/python project8/codes/08_update_report.py
+   .tools/quarto/bin/quarto render project8/lab8.qmd --to pdf
+   Rendered PDF pages with bundled pdftoppm and visually reviewed them.
+   bio4901.sty absent; optional hook reserved, course style not applied.
+
+7. Local git
+   DEVELOPER_DIR=/Library/Developer/CommandLineTools git init
+   Commits grouped by data, training, evaluation and workflow/report modules.
+   No remote configured or pushed. Raw data, weights, tools and environments are ignored.
+
+8. Final cleanup and dependency validation
+   uvx ruff==0.11.8 format project8/codes project8/tests
+   uvx ruff==0.11.8 check project8/codes project8/tests --select F821,F823
+   uv pip compile project8/requirements.txt --python-version 3.11 --python-platform x86_64-unknown-linux-gnu --output-file project8/requirements-lock-linux.txt --quiet
+   Linux resolution succeeded; no claim of Linux installation/CUDA execution.
+   Final smoke DAG completed 8/8 nodes with no warnings/errors; tests 9/9 passed.

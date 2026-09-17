@@ -1,0 +1,112 @@
+# BIO4901 Lab 8 — ESM-2 protein localization
+
+**这些结果是在本地小规模 subset 冒烟测试基础上生成的代码，完整实验结果将在 GPU 服务器运行后更新。** 当前所有性能图为 `[PLACEHOLDER - 待服务器全量运行后替换]`；Full FT 仅一个 batch，不能用于判断方法排名。
+
+## 项目与数据
+
+本仓库根目录内的 `project8/` 是课程提交项目。所有以下命令均在 `project8/` 执行。固定模型为 `facebook/esm2_t30_150M_UR50D`，不可变 revision `a695f6045e2e32885fa60af20c13cb35398ce30c`。
+
+```text
+project8/
+  codes/01_download_data.py          # 下载、标签清洗、官方划分、全量 QC
+  codes/02_extract_embeddings.py     # 固定 ESM + exact cosine 5-NN
+  codes/03_train_linear_probe.py     # cached embedding + linear softmax
+  codes/04_train_lora.py             # query/value rank-8 LoRA + head
+  codes/05_train_full_ft.py           # full FT + CUDA preflight/OOM fallback
+  codes/06_evaluate_and_bootstrap.py  # calibration, paired bootstrap, robustness
+  codes/07_make_figures.py           # PDF/SVG/300dpi PNG
+  codes/08_update_report.py          # 将指定运行的结果填入报告 include
+  codes/utils.py, train_core.py, frozen_knn.py
+  scripts/Snakefile
+  tests/test_pipeline.py
+  results/metrics_table.csv, bootstrap_ci.csv, images/, qc/
+  environment.yml, requirements.txt, requirements-lock-macos.txt, requirements-lock-linux.txt
+  command_log.txt, data_dictionary.md, lab8.qmd, lab8.pdf
+```
+
+官方下载共 14,004 条，**排除 146 条 Cytoplasm-Nucleus 双定位记录**，保留 13,858 条。`Plastid` 映射到课程的 Chloroplast（原注释含义更宽）。官方 train/test 为 **11,085 / 2,773**，不重新随机划分。原论文以同源簇分五折、留一折测试；序列 hash 审计跨集合完全重复为 0，但不能独立证明同源阈值，亦不能排除 ESM 预训练重叠。详情见 `results/qc/` 与 [原论文](https://doi.org/10.1093/bioinformatics/btx431)。训练集内部不创建随机验证集；固定 epoch、使用最后 checkpoint，不通过测试成绩调参。
+
+## 环境搭建
+
+```bash
+conda env create -f environment.yml
+conda activate bio4901-lab8
+python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.backends.mps.is_available())"
+```
+
+或 Python 3.11 venv：
+
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+本次 Mac 环境位于仓库根的 `.venv/`，激活命令为 `source ../.venv/bin/activate`。版本在 environment.yml 精确固定；macOS 完整实际安装快照另存 lock 文件，**不要在 Linux 直接复用 macOS 的传递依赖快照**。`requirements-lock-linux.txt` 是为 Linux x86_64 / Python 3.11 解析的完整依赖锁（包括 CUDA 12.4 依赖），可在对应服务器 venv 中 `pip install -r requirements-lock-linux.txt`。它通过依赖解析，尚未在 CUDA 机器安装/实跑。bitsandbytes 0.45.5 仅在 Linux x86_64 安装；MPS/CPU 使用 torch AdamW。不要求 Mac 有 CUDA。
+
+## 本地冒烟：一条命令
+
+```bash
+snakemake -s scripts/Snakefile --cores 1 --config subset=True
+```
+
+默认训练 200、测试 40，十类均至少保留一条，种子固定；采样只发生在原集合内部。Linear/LoRA 两轮，Full FT 一个 optimizer step、batch 1；最大残基数 128。全量 QC 始终使用全部数据。已有产物时 Snakemake 跳过已完成节点；完整复验加 `--forceall`。串行执行避免 GPU 资源竞争。
+
+## RTX 3090 Ti 全量复现
+
+在服务器 clone 后，进入 `project8/` 并安装上面的环境。建议先确认 `nvidia-smi` 正常及当前 PyTorch wheel 能使用 CUDA：
+
+```bash
+python -c "import torch, bitsandbytes; print(torch.cuda.get_device_name(0)); print('bf16:', torch.cuda.is_bf16_supported())"
+python codes/05_train_full_ft.py --device cuda --probe_only --batch_size 4 --effective_batch_size 16 --max_length 512 --output_dir results/server_probe
+snakemake -s scripts/Snakefile --cores 1 --config subset=False
+```
+
+只改变 `subset=False` 即运行全量，输出隔离到 `results/full_run/`，embedding 在 `data/embeddings_full/`，不会覆盖 Mac 占位结果。默认 10 epochs；可附加 `epochs=20`，须在看测试分数前确定。默认最大长度 512，保留两端；单脚本可使用 `--max_length 1022`。不传 `--subset_size` 或传 `None` 即全部训练记录，`--eval_size` 不传时随 subset_size，二者均不传即全部测试记录。
+
+若租用镜像的驱动不兼容环境默认 CUDA wheel，应按 PyTorch 的官方安装方式安装 **同版本 torch 2.6.0** 的兼容 CUDA wheel，并记录 `torch.__version__`；不在 Mac 上伪称验证过 CUDA。预检必须在目标 GPU 实机完成。
+
+## 参数、内存与中断恢复
+
+所有训练入口支持 `--subset_size --epochs --batch_size --device --output_dir --max_length --seed`。Transformer 训练还支持 `--effective_batch_size --precision {auto,bf16,fp32} --optimizer {adamw,adamw_8bit} --lora_rank --freeze_layers --resume --max_steps`。
+
+- CUDA 默认 bf16（硬件检测不支持则 fp32）、gradient checkpointing、8-bit AdamW、batch 4 + accumulation 到有效 batch 16。MPS 运行时检测 bf16 autocast，否则 fp32。
+- CUDA Full FT 自动先运行微型输入，再运行**配置最大 batch/长度并执行 optimizer step**。峰值包括 optimizer 状态；不是用微型 batch 简单线性外推，仍不是 OOM 保证。
+- 探测 OOM 按 **batch 减半到 1 → length 减半到 min_length=128 → 冻结前 5/10/.../29 层** 重试。训练循环 OOM 从固定预训练基座重启当前策略并采用下一配置，进程替换释放全部 GPU 分配。失败重试不是继续部分更新的模型。
+- 降级写入 `memory_probe.json`、`runtime_oom.json`、`run.json`；冻结层后方法标为 `partial_ft`，不同长度也会标记为预处理不一致。不能把它无说明地当 full FT 同条件比较。
+- 每 30 秒心跳，tqdm ETA，固定 step 日志，同时写终端和 `<output_dir>/training.log`。epoch 完成后原子覆盖 `last.pt`；`last.json` 保留小配置。可恢复 optimizer、RNG 与下一 epoch，最多重做中断中的一个 epoch。
+- `--max_steps` 是开发测试上限，不用于正式轮次续跑；中途截断的 epoch 保存为已完成的开发片段。
+
+例如恢复相同目录、相同参数的 LoRA（除 epoch 总数可增加）：
+
+```bash
+python codes/04_train_lora.py --max_length 512 --batch_size 4 --effective_batch_size 16 --epochs 10 --output_dir results/full_run/lora --resume results/full_run/lora/last.pt
+```
+
+不要加载来源不可信的 `.pt` checkpoint。Frozen 的参考 embedding 保存在忽略的缓存中；kNN 本身无训练迭代。Linear 的 backbone 不参与训练，训练参数 6,410；LoRA 为 620,810；full classification 模型为 148,391,050（未使用的 contact head 不训练）。
+
+## 评估、画图和更新报告
+
+```bash
+python codes/06_evaluate_and_bootstrap.py --output_dir results/full_run --n_bootstrap 1000
+python codes/07_make_figures.py --output_dir results/full_run --embedding_dir data/embeddings_full
+python codes/08_update_report.py --results_dir results/full_run
+quarto render lab8.qmd --to pdf
+```
+
+这些命令可替换为 `results` 和 `data/embeddings` 重画当前本地报告。报告脚本自动更新结果表、配对 CI 和图路径；QMD 正文保留方法与讨论框架。全量完成后作者仍需更新正文中标记的本地/占位说明和科学结论，不能自动把占位讨论当正式结论。
+
+本地已使用 Quarto 1.7.32、XeLaTeX 渲染。`bio4901.sty` 在 YAML 的 `IfFileExists` 位置可选加载；用户放入 project8 根目录后重新 render。Linux 字体可用：`quarto render lab8.qmd -M mainfont='DejaVu Serif' -M CJKmainfont='Noto Serif CJK SC'`（先安装相应字体及 TeX/algorithm2e）。缺课程样式时不会冒充已应用课程模板。
+
+CSV 包括固定十类 macro F1、accuracy、ECE、NLL、Brier、参数/成本，以及分组鲁棒性。bootstrap 是 1,000 次配对、按类别分层的序列重采样；未有簇 ID，不能当独立家族重采样。PCA 只在训练 embedding 拟合。合成鲁棒性输入为两端各最多 10 个残基替换 X，不能当真实生物突变。
+
+## 验证与 Git
+
+```bash
+python -m pytest tests -q
+snakemake -s scripts/Snakefile --cores 1 --config subset=False -n
+```
+
+已实测：MPS ESM bf16 forward/backward、Frozen、Linear/LoRA 两轮、Full FT 单 batch、checkpoint 参数恢复、梯度、完整 Snakemake smoke DAG、统计/图表与 PDF。CUDA/bitsandbytes 内核和 CUDA OOM 情况尚待服务器实测；降级顺序以测试覆盖。
+
+`.gitignore` 排除 raw/processed、embedding、权重、虚拟环境和工具安装；保留小 checkpoint JSON、CSV 与图。仓库只完成本地分模块提交，无 remote/push 操作。若 Mac 系统 Git 提示 Xcode 许可，可在已安装 Command Line Tools 的本机使用 `DEVELOPER_DIR=/Library/Developer/CommandLineTools git ...`。推送前在仓库根检查 `git status`。

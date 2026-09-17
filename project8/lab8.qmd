@@ -1,0 +1,144 @@
+---
+title: "BIO4901 Lab 8：ESM-2 蛋白质亚细胞定位"
+subtitle: "参数适配、计算成本与同源性敏感评估"
+author: "Yukai Wang"
+date: "2026-09-17"
+lang: zh
+format:
+  pdf:
+    pdf-engine: xelatex
+    documentclass: article
+    papersize: a4
+    fontsize: 10pt
+    geometry: margin=22mm
+    toc: true
+    number-sections: true
+    colorlinks: true
+    mainfont: "Times New Roman"
+    CJKmainfont: "PingFang SC"
+    include-in-header:
+      text: |
+        \usepackage[ruled,vlined]{algorithm2e}
+        \usepackage{float}
+        % Optional course style: place bio4901.sty in project8/.
+        \IfFileExists{bio4901.sty}{\usepackage{bio4901}}{}
+execute:
+  enabled: false
+---
+
+# 背景介绍
+
+蛋白质序列包含与折叠、运输及定位相关的信息。ESM-2 通过掩码语言建模学习序列表征 [2]，但预训练表征能否在有限标注条件下支持定位分类，以及适配带来的提升是否值得额外计算成本，需要实证比较。本实验采用固定版本的 `facebook/esm2_t30_150M_UR50D`，比较 Frozen embedding + kNN、Linear probing、LoRA 和全参数微调。
+
+研究问题包括：不同适配策略在官方同源簇划分下的预测表现如何；参数量、训练时间与显存如何变化；高 benchmark 分数是否对应可靠校准、长度泛化及合理的定位信号使用。
+
+**本报告当前为本地冒烟验证稿；结果不能用于回答策略优劣。所有正式结论待 GPU 全量运行后补充。**
+
+# 实验数据与方法
+
+## 数据来源与标签清洗
+
+使用 DeepLoc-1.0 官方 FASTA [1]。原文件有 14,004 条记录；146 条 `Cytoplasm-Nucleus` 双定位记录不适用于本实验十类单标签设定，明确排除，保留 13,858 条。header 中 `-S/-M/-U` 表示 soluble、membrane、unknown，独立保存为生物学分组变量，不参与定位标签预测。原始 `Plastid` 映射为课程所用 Chloroplast，但该名称映射不代表原注释都精确限定于叶绿体。
+
+![完整数据集的类别分布与长度分布。此 QC 使用全部保留记录，而非 subset。](results/images/fig0_data_qc.pdf){width=100% fig-pos="H"}
+
+## Leakage-aware validation
+
+只通过 header 末尾独立的 `test` token 识别官方测试记录，不随机重分 train/test。原论文第 2.3.1 节说明：使用 PSI-CD-HIT，以 30% identity 或 $10^{-6}$ E-value 条件聚类，并要求覆盖较短序列的 80%；同源簇整体分入五折，其中一折留出测试 [1]。本项目继承这一划分，不声称自行重现该聚类过程。
+
+SHA-256 完整序列摘要检查显示跨集合重复数为零；训练内部有 49 条重复序列，测试内部有 5 条。该审计可以发现完全相同序列泄漏，**不能证明所有跨集合序列都低于某一同源性阈值**。ESM 预训练语料可能包含相关蛋白，不能据此排除预训练重叠。测试内部相关性也限制序列级 bootstrap 的解释。
+
+FASTA 不提供原训练集的四折簇 ID。本实现固定学习率和训练轮数、使用最后 checkpoint，不使用测试分数进行 early stopping、超参数选择或校准参数拟合。若后续需要调参，须在官方训练集内部另外获得/构建同源簇验证折，不能反复查看本测试集选模型。
+
+## 表征与适配策略
+
+使用非 padding、非 BOS/EOS token 的平均隐状态，维度为 640。长序列保留前半段和后半段，删除中部，以尽量保留 N/C 端运输信号；本地上限为 128 个残基，全量默认 512，可通过 CLI 修改到 1022。截断比例保存在 QC summary；输入截断本身是实验局限。
+
+| 策略 | 可训练部分 | 分类方式 |
+|:--|:--|:--|
+| Frozen | 无梯度训练参数 | 固定表征，余弦距离 5-NN，距离加权投票 |
+| Linear | 640×10 权重与 10 维偏置 | 固定表征上的 softmax 线性层 |
+| LoRA | query/value 低秩矩阵及分类头 | rank 8，alpha 16，dropout 0.05 |
+| Full FT | 编码器和分类头 | 更新用于分类的全部参数；未使用 contact head 冻结 |
+
+Frozen 分类器仍需存储参考样本，零可训练参数不等于零存储或推断成本。Linear 的成本计入共享 embedding 提取；不同方法使用相同训练/测试 ID 和预处理。若显存降级修改最大长度或冻结层数，元数据明确记录，不能继续作为严格同预算 full-FT 比较。
+
+## LoRA 算法
+
+对目标线性映射 $W_0\in\mathbb{R}^{d_{out}\times d_{in}}$，令
+$W=W_0+(\alpha/r)BA$，其中 $A\in\mathbb{R}^{r\times d_{in}}$、$B\in\mathbb{R}^{d_{out}\times r}$；固定 $W_0$，仅更新 $A,B$ 和分类头 [3]。
+
+```{=latex}
+\begin{algorithm}[H]
+\caption{LoRA adaptation for protein localization}
+\KwIn{Official training sequences $D$, pretrained encoder $W_0$, rank $r=8$}
+\KwOut{Adapter matrices $A,B$ and classification head $C$}
+Freeze $W_0$; initialize $A$ randomly and $B=0$; initialize $C$\;
+\For{each fixed training epoch}{
+  \For{each accumulation group of mini-batches}{
+    Zero optimizer gradients\;
+    \For{each mini-batch $(x,y)$}{
+      Preserve sequence termini; tokenize $x$\;
+      Compute encoder states with $W_0+(\alpha/r)BA$\;
+      Mean-pool valid residue states and compute logits using $C$\;
+      Accumulate sample-weighted cross-entropy gradients\;
+    }
+    Clip gradients; update $A,B,C$ only\;
+  }
+  Save trainable tensors, optimizer state and random-number states\;
+}
+Evaluate the final checkpoint on the untouched official test set\;
+\end{algorithm}
+```
+
+## 设备、成本与可复现性
+
+设备优先级为 CUDA、MPS、CPU。本地使用 ARM64 Mac 的 MPS，24 GiB 统一内存。混合精度先检测 bf16 可用性，否则回退 fp32。CUDA Full FT 默认开启 bf16、gradient checkpointing、8-bit AdamW、batch 4、有效 batch 16。显存预检不仅运行微型输入，还运行配置的最大形状并执行 optimizer step，以包括惰性分配的优化器状态；探测更新随后丢弃。OOM 降级依次减 batch、减长度、冻结前层，并记录改变后的方法名。
+
+日志每 30 秒心跳输出运行时长、ETA、step/loss/accuracy 和内存；训练以 epoch 为单位保存可恢复状态。本地没有 CUDA，8-bit optimizer 与 CUDA peak memory 尚未实机验证。MPS 当前分配内存不是 CUDA peak 显存，也不等于设备总内存峰值。
+
+## 指标与统计推断
+
+报告 accuracy、固定十类 macro F1、10 个等宽区间 top-label ECE、NLL 与多分类 Brier score。可靠性图仅绘制非空区间。使用 1,000 次按真实类别分层的**配对** bootstrap，四种方法共享相同的重采样样本，输出单方法与两两差值的 95% percentile CI。区间条件于测试样本和固定类别数量，未包含训练 seed 方差；不是同源簇级 CI。测试集未用于 temperature scaling。
+
+# 实验流程
+
+![数据至评估与统计的 DAG；四个适配分支共用官方测试样本。](results/images/fig6_workflow.pdf){width=100% fig-pos="H"}
+
+Snakemake 通过 `subset=True/False` 切换本地冒烟和服务器全量配置。原始 FASTA、embedding 与大权重均不提交，代码、QC、CSV、矢量图与 checkpoint 配置提交。下载文件 SHA-256、模型不可变 revision、软件版本、设备和运行参数记录在对应 JSON。
+
+# 实验结果与分析
+
+{{< include results/report_results.qmd >}}
+
+## 生物学解释框架
+
+校准度与分类正确率应同时解读：弱分类器也可能有较小 ECE，不能仅据 ECE 判断可用性。核定位与胞质定位的混淆可能反映定位信号重叠，但本实验不能从混淆矩阵直接证明分子机制。PCA 仅展示表示结构，不是聚类质量或定位因果机制的证据。
+
+`robustness_by_group.csv` 提供长度组、膜/可溶组与每类表现，并加入截断后两端各最多 10 个残基替换为 X 的诊断。端点扰动若使分数下降，仅提示模型对相关输入敏感；X 并非真实生物突变，需结合真实信号肽、定位序列注释进行后续验证。小样本分组结果尤其不稳定。
+
+# 讨论与总结
+
+## 局限性
+
+当前仅完成本地 pipeline 检查；Full FT 只更新一个 batch，其他方法只有 200 条训练样本、两轮训练，不能进行科学排名。正式运行须保留原测试集合、补齐 GPU 实测峰值和训练成本，并尽可能增加训练随机种子。
+
+数据类别不平衡、少数类数量有限；序列截断可能删除功能信号。单标签任务排除了双定位蛋白，不覆盖复杂细胞状态与动态运输。继承的同源簇划分降低监督训练泄漏风险，但不排除预训练重叠；序列级重采样亦可能低估同源相关性。单一物种集合与时期的注释不能代表所有真实应用分布。
+
+自动冻结层会改变问题设定，必须作为部分层微调单独报告。CPU/MPS 的时间和内存不能外推 RTX 3090 Ti；预检并不保证所有生产负载都不会 OOM。
+
+## 伦理与数据声明
+
+数据来自公开的研究资源，依来源规范引用；不上传原始序列到 git。工作用于教学研究，不用于临床或病原体工程决策。本地冒烟结果均明示为占位，不伪造全量或 CUDA 验证结果。代码与报告草稿由 AI 辅助实现，作者应审核实验配置、数据解释和最终提交内容。
+
+## 待全量运行后回答
+
+正式结论应围绕宏平均性能提升是否稳定、增益是否足以解释额外计算成本、对少数类和长序列是否泛化，以及校准与端点扰动是否一致，而非只比较一项总体 accuracy。
+
+# 参考文献
+
+1. Almagro Armenteros JJ, Sønderby CK, Sønderby SK, Nielsen H, Winther O. DeepLoc: prediction of protein subcellular localization using deep learning. *Bioinformatics*. 2017;33(21):3387–3395. [doi:10.1093/bioinformatics/btx431](https://doi.org/10.1093/bioinformatics/btx431).
+2. Lin Z, Akin H, Rao R, et al. Evolutionary-scale prediction of atomic-level protein structure with a language model. *Science*. 2023;379:1123–1130. [doi:10.1126/science.ade2574](https://doi.org/10.1126/science.ade2574).
+3. Hu EJ, Shen Y, Wallis P, et al. LoRA: Low-Rank Adaptation of Large Language Models. *ICLR*. 2022. [arXiv:2106.09685](https://arxiv.org/abs/2106.09685).
+4. [DeepLoc-1.0 官方数据说明](https://services.healthtech.dtu.dk/services/DeepLoc-1.0/).
+5. [ESM-2 150M 模型与权重](https://huggingface.co/facebook/esm2_t30_150M_UR50D).
