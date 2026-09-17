@@ -87,7 +87,15 @@ def main():
         for i, (x, y) in enumerate(zip(xs, ys)):
             ax.scatter(x, y, color=colors[i], s=70, zorder=3)
             ax.annotate(
-                labels[i], (x, y), xytext=(5, 5), textcoords="offset points", fontsize=8
+                labels[i],
+                (x, y),
+                xytext=(
+                    [(10, -18), (10, 10), (-35, -16), (-35, 8)][i]
+                    if xcol == "total_seconds"
+                    else (5, 5)
+                ),
+                textcoords="offset points",
+                fontsize=8,
             )
         # Non-dominated frontier, never an arbitrary line through all methods.
         frontier = []
@@ -258,7 +266,8 @@ def main():
         axs[0].plot(h.epoch, h.loss, "o-", label=NAMES[s], color=c)
         axs[1].plot(h.epoch, h.accuracy, "o-", label=NAMES[s], color=c)
     axs[0].set(
-        xlabel="Epoch (full FT smoke may be partial)", ylabel="Training cross-entropy"
+        xlabel="Epoch (full FT smoke may be partial)" if smoke else "Epoch",
+        ylabel="Training cross-entropy",
     )
     axs[1].set(xlabel="Epoch", ylabel="Training accuracy")
     axs[1].legend()
