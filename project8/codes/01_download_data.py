@@ -24,7 +24,7 @@ def main():
     counts.to_csv(a.output_dir/'class_distribution.csv')
     lengths=df.groupby('split').length.describe(percentiles=[.25,.5,.75,.9,.95,.99])
     lengths.to_csv(a.output_dir/'length_distribution.csv')
-    write_json(a.output_dir/'summary.json',{'source':URL,'sha256':hashlib.sha256(a.data.read_bytes()).hexdigest(),'n':len(df),'class_counts':df.location.value_counts().to_dict(),'imbalance_max_min':float(df.location.value_counts().max()/df.location.value_counts().min()),'truncation_fraction':{str(n):float((df.length>n).mean()) for n in [128,512,1022]},'noncanonical_residue_count':int(df.sequence.str.count('[^ACDEFGHIKLMNPQRSTVWY]').sum()),'split_policy':'official test token only','audit':audit})
+    write_json(a.output_dir/'summary.json',{'source':URL,'sha256':hashlib.sha256(a.data.read_bytes()).hexdigest(),'n':len(df),'raw_n':sum(1 for _ in SeqIO.parse(a.data,'fasta')),'excluded_dual_localization':sum('Cytoplasm-Nucleus' in r.description for r in SeqIO.parse(a.data,'fasta')),'label_mapping':{'Plastid':'Chloroplast (broader source annotation)'},'class_counts':df.location.value_counts().to_dict(),'imbalance_max_min':float(df.location.value_counts().max()/df.location.value_counts().min()),'truncation_fraction':{str(n):float((df.length>n).mean()) for n in [128,512,1022]},'noncanonical_residue_count':int(df.sequence.str.count('[^ACDEFGHIKLMNPQRSTVWY]').sum()),'split_policy':'official test token only','audit':audit})
     # Individual sequences and metadata stay in ignored processed directory.
     dest=ROOT/'data/processed'; dest.mkdir(parents=True,exist_ok=True); df.to_csv(dest/'metadata.csv',index=False)
     import matplotlib; matplotlib.use('Agg')

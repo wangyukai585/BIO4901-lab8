@@ -25,7 +25,8 @@ def seed_all(seed):
     torch.set_num_threads(min(8,os.cpu_count() or 1))
 
 def get_device(request='auto'):
-    if request=='auto': request='cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
+    automatic=request=='auto'
+    if automatic: request='cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
     d=torch.device(request)
     if d.type=='cuda' and not torch.cuda.is_available(): raise ValueError('CUDA requested but unavailable')
     if d.type=='mps' and not torch.backends.mps.is_available(): raise ValueError('MPS requested but unavailable')
@@ -33,7 +34,7 @@ def get_device(request='auto'):
     try:
         x=torch.ones(2,device=d); _=x.sum().item()
     except RuntimeError:
-        if request!='auto': raise
+        if not automatic: raise
         d=torch.device('cpu')
     return d
 
@@ -167,8 +168,18 @@ def load_backbone(args):
 def precision(d,requested='auto'):
     if requested=='fp32': return None
     if d.type=='cuda' and torch.cuda.is_bf16_supported(): return torch.bfloat16
-    # torch 2.6 MPS autocast does not reliably cover the full ESM backward graph.
-    # Conservative, explicit fp32 fallback; CUDA bf16 path tested on server.
+    if d.type=='mps':
+        # Runtime detection: older macOS/PyTorch may reject or disable bf16.
+        import warnings
+        try:
+            with warnings.catch_warnings(record=True) as notices:
+                x=torch.ones((2,2),device=d,requires_grad=True)
+                with torch.autocast('mps',dtype=torch.bfloat16): y=x@x
+                y.sum().backward()
+                supported=y.dtype==torch.bfloat16 and not notices
+            del x,y
+            if supported: return torch.bfloat16
+        except (RuntimeError,TypeError): pass
     return None
 
 def amp(d,dtype): return torch.autocast(device_type=d.type,dtype=dtype) if dtype else contextlib.nullcontext()
