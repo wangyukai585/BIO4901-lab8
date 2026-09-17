@@ -1,0 +1,37 @@
+{
+  "source": "https://services.healthtech.dtu.dk/services/DeepLoc-1.0/deeploc_data.fasta",
+  "sha256": "ea5b052662dd580d56fab3bf7ebb43bbc215feb96308d45b66a96675874c1f2b",
+  "n": 13858,
+  "class_counts": {
+    "Nucleus": 4043,
+    "Cytoplasm": 2542,
+    "Extracellular": 1973,
+    "Mitochondrion": 1510,
+    "Cell membrane": 1340,
+    "Endoplasmic reticulum": 862,
+    "Chloroplast": 757,
+    "Golgi apparatus": 356,
+    "Lysosome/Vacuole": 321,
+    "Peroxisome": 154
+  },
+  "imbalance_max_min": 26.253246753246753,
+  "truncation_fraction": {
+    "128": 0.9050368018473084,
+    "512": 0.3795641506710925,
+    "1022": 0.09337566748448549
+  },
+  "noncanonical_residue_count": 112,
+  "split_policy": "official test token only",
+  "audit": {
+    "train_n": 11085,
+    "test_n": 2773,
+    "cross_split_identical_sequence_hashes": 0,
+    "cross_split_identical_sequence_pairs": 0,
+    "cross_split_accession_overlap": 0,
+    "within_train_duplicate_sequences": 49,
+    "within_test_duplicate_sequences": 5,
+    "homology_evidence": "Original DeepLoc paper section 2.3.1: PSI-CD-HIT, 30% identity OR 1e-6 E-value; 80% shorter-sequence coverage; clusters assigned to five folds; one held out.",
+    "limitation": "Exact duplicate audit only; does NOT independently establish a pairwise homology threshold or exclude ESM pretraining overlap.",
+    "source": "https://doi.org/10.1093/bioinformatics/btx431"
+  }
+}

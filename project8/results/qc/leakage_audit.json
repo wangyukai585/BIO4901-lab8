@@ -1,0 +1,12 @@
+{
+  "train_n": 11085,
+  "test_n": 2773,
+  "cross_split_identical_sequence_hashes": 0,
+  "cross_split_identical_sequence_pairs": 0,
+  "cross_split_accession_overlap": 0,
+  "within_train_duplicate_sequences": 49,
+  "within_test_duplicate_sequences": 5,
+  "homology_evidence": "Original DeepLoc paper section 2.3.1: PSI-CD-HIT, 30% identity OR 1e-6 E-value; 80% shorter-sequence coverage; clusters assigned to five folds; one held out.",
+  "limitation": "Exact duplicate audit only; does NOT independently establish a pairwise homology threshold or exclude ESM pretraining overlap.",
+  "source": "https://doi.org/10.1093/bioinformatics/btx431"
+}
