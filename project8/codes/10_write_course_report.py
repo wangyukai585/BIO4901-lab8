@@ -112,8 +112,8 @@ execute:
         "| 方法 | Accuracy | Macro F1 | ECE ↓ | 训练参数 | 时间/min | CUDA峰值/GiB |\n|:--|--:|--:|--:|--:|--:|--:|",
     ]
     for s, row in table.iterrows():
-        lines.append(
-            f"| {NAMES[s]} | {row.accuracy:.3f} | {row.macro_f1:.3f} | {row.ece:.3f} | {int(row.trainable_parameters):,} | {row.total_seconds / 60:.1f} | {row.gpu_peak_mb / 1024:.2f} |"
+        lines[-1] += (
+            f"\n| {NAMES[s]} | {row.accuracy:.3f} | {row.macro_f1:.3f} | {row.ece:.3f} | {int(row.trainable_parameters):,} | {row.total_seconds / 60:.1f} | {row.gpu_peak_mb / 1024:.2f} |"
         )
     lines += [
         f"本次单次运行中，**{NAMES[best]} 的 Macro F1 最高，为 {bestrow.macro_f1:.3f}**；固定表征基线为 {base.macro_f1:.3f}。Macro F1 对每一类同等计分，因此能补充总体 accuracy 被大类别主导的问题。",
