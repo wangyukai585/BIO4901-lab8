@@ -42,3 +42,12 @@ Raw FASTA: official DeepLoc-1.0 download; **never commit**. Raw count 14,004; ex
 - bootstrap `comparison`: method or first minus second; same resampled IDs across methods.
 
 `results/qc/summary.json` supplies full counts, imbalance ratio, truncation fractions, source SHA-256 and exclusion policy. `run.json` supplies exact configuration and hardware. `robustness_by_group.csv` includes class, length and S/M/U groups and synthetic terminal masking. `checkpoint_check.json` records fixed-batch loss and parameter restore checks. Sequence-level bootstrap does not establish independence of homologous proteins.
+
+
+## 补充生物学对照
+
+`results/full_run/biological_controls/` 中 `<strategy>_<condition>.csv` 保存相同测试 ID 下的概率。`original` 为同批次大小重推断的原始输入；`N10`、`C10`、`internal10` 为截断后开头、结尾、内部的 X 遮蔽。每条序列遮蔽数相同，为 min(10, floor(length/4))；内部起点为 floor(length/4)-floor(mask_length/2)。
+
+`class_effects.csv`：`baseline_recall`、`masked_recall` 为该真实类别的正确识别率；`recall_drop` 为原始减遮蔽，正数代表下降；`true_probability_drop` 为真实类别预测概率的平均下降；`ci_low/high` 是类内配对重采样 1000 次的逐项 95% 区间，未做多重比较校正。`baseline_check.json` 记录重推断与正式结果的一致率；这些辅助推断不替换原 benchmark。图 11 只展示三种具有明确端点定位假说的类别，完整 CSV 保留十类结果。
+
+补充推断实际使用 CUDA bf16、batch 8；原 Frozen 表征提取为 fp32。四策略与原预测一致率分别为 99.279%、99.603%、99.964%、100%。遮蔽效应全部相对于相同新推断条件的 original 基线计算，不替换正式主指标。

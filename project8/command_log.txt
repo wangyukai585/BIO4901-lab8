@@ -89,3 +89,19 @@ This is a curated reproducibility log, not a complete terminal transcript.
     .tools/quarto/bin/quarto render project8/lab8.qmd --to pdf
     Formal PDF rendered and pages visually reviewed with bundled pdftoppm.
     Earlier chronological smoke/pending entries describe historical stages, not current status.
+
+11. Course requirement audit and report revision, 2026-09-18
+    Read supplied BIO4901 PDF pages 25-28, 31 and 33; audited Lab 8 requirements.
+    Added post-training N-terminal, C-terminal and internal equal-length X-mask controls.
+    Server: HF_HOME=/root/autodl-tmp/hf-cache HF_HUB_OFFLINE=1 python codes/11_biological_controls.py --device cuda
+    All four methods, 2773 test proteins, original + three masks; 536.41 seconds. No retraining or hyperparameter selection.
+    Downloaded all 16 prediction CSVs, class effects and audit metadata before telling user server is no longer needed.
+    Checked matching IDs, probability sums, 120 class effects, original baseline agreement >=99%.
+    .venv/bin/python project8/codes/12_plot_biological_controls.py
+    Rewrote report/template.qmd with standard sections, plain Chinese, required-comparison matrix and appendices.
+    .venv/bin/python project8/codes/10_write_course_report.py
+    .tools/quarto/bin/quarto render project8/lab8.qmd --to pdf
+    Final report: 8 pages, 12 figures, rendered and visually checked.
+    pytest: 11 passed; ruff undefined-name checks passed; full/smoke Snakefile dry runs passed.
+    Added scripts/package_submission.py using git archive; only project8 tracked files, no raw data or weights.
+    bio4901.sty not supplied; optional hook retained, custom report layout used.

@@ -15,6 +15,30 @@ Full FT 的 Macro F1 最高；Linear 的校准和成本更有优势。LoRA 更�
 
 CUDA bf16、AdamW8bit、batch 4、有效 batch 16、512 残基和 gradient checkpointing 均实测通过，未触发 OOM 降级。硬件和训练源代码版本见 `results/full_run/server_environment.json`；逐方法配置见 `run.json`。原始数据和模型权重不提交。
 
+## 报告修订与补充实验（2026-09-18）
+
+按课程 PPT 第 25/27/31/33 页逐项核对，详见 [requirements_audit.md](requirements_audit.md)。报告改为标准研究报告结构，以简短中文解释做法与结果，技术细节和辅助图移入附录。当前未提供 `bio4901.sty`；保留可选加载位置，不声称已套用课程样式。
+
+补充了**开头 / 结尾 / 内部等长遮蔽**实验：对同一官方测试集、同一已训练模型，在截断后分别替换最多 10 个残基为 X；内部片段中心位于保留序列长度的 1/4 处，避免跨越长序列截断拼接点。按类别记录识别率和真实类别概率的变化。属于主 benchmark 后的解释性分析，不用于训练或选模型。
+
+```bash
+snakemake -s scripts/Snakefile --cores 1 --config subset=False biological=True
+python codes/10_write_course_report.py --results_dir results/full_run
+quarto render lab8.qmd --to pdf
+```
+
+**重新计算已有结果时须加 `--forceall`**；仓库已包含成品结果，不加会复用已有节点。
+
+服务器已训练模型存在时，可仅运行 `11_biological_controls.py` 和 `12_plot_biological_controls.py`。新克隆仓库不含权重，须先运行训练节点生成 checkpoint。正式正文模板在 `report/template.qmd`，结果由报告脚本填入；新实验后仍需审阅结论。
+
+仅打包本次 Lab 8 的已提交代码与结果（不含原始数据/权重）：
+
+```bash
+python scripts/package_submission.py --output ../BIO4901_project8_submission.tgz
+```
+
+课程最终要求合并两个项目提交，此压缩包只包含 `project8/`，不是替代另一项目的完整课程提交。
+
 ## 项目与数据
 
 本仓库根目录内的 `project8/` 是课程提交项目。所有以下命令均在 `project8/` 执行。固定模型为 `facebook/esm2_t30_150M_UR50D`，不可变 revision `a695f6045e2e32885fa60af20c13cb35398ce30c`。

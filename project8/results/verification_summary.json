@@ -14,11 +14,11 @@
     "lora_epochs": 2,
     "full_optimizer_steps": 1
   },
-  "pytest_passed": 10,
+  "pytest_passed": 11,
   "snakemake_jobs_passed": 8,
   "cpu_resume_bitwise_verified": true,
-  "pdf_pages": 7,
-  "pdf_visual_review": "formal full-run report; all final pages inspected",
+  "pdf_pages": 8,
+  "pdf_visual_review": "Revised course report: all eight pages visually reviewed; no clipped tables or overlapping labels",
   "cuda_kernel_validation": "passed on RTX 3080 Ti with torch 2.6.0+cu124",
   "linux_lock_resolution": "installed and full experiment completed",
   "raw_data_committed": false,
@@ -42,5 +42,33 @@
     "oom_fallback_triggered": false,
     "bootstrap_resamples": 1000,
     "snakemake_jobs_passed": 7
+  },
+  "biological_controls": {
+    "test_n": 2773,
+    "strategies": 4,
+    "conditions": [
+      "original",
+      "N10",
+      "C10",
+      "internal10"
+    ],
+    "class_effect_rows": 120,
+    "elapsed_seconds": 536.4117910841014,
+    "paired_baseline": "rerun original for each method at matched precision and batch size",
+    "precision": "torch.bfloat16",
+    "batch_size": 8,
+    "primary_benchmark_unchanged": true,
+    "all_prediction_IDs_and_probability_sums_checked": true
+  },
+  "course_requirements_audited": {
+    "slides": [
+      25,
+      27,
+      31,
+      33
+    ],
+    "all_four_required_comparisons_covered": true,
+    "biological_plausibility": "matched-length terminal/internal masking added; not causal proof",
+    "course_sty_available": false
   }
 }
