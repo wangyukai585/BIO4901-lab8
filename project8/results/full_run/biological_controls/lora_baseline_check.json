@@ -1,0 +1,4 @@
+{
+  "prediction_agreement": 0.999639379733141,
+  "note": "Supplement uses bf16 and batch 8, while original frozen embeddings used fp32. All masks compared to rerun baseline; main benchmark unchanged."
+}

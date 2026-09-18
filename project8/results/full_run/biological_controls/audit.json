@@ -1,0 +1,21 @@
+{
+  "status": "COMPLETED",
+  "test_n": 2773,
+  "conditions": [
+    "original",
+    "N10",
+    "C10",
+    "internal10"
+  ],
+  "max_residues": 512,
+  "mask_length": "min(10, floor(length/4))",
+  "internal_start": "floor(retained_length/4)-floor(mask_length/2)",
+  "bootstrap": "1000 paired within-class sequence resamples; descriptive unadjusted intervals",
+  "training": false,
+  "elapsed_seconds": 536.4117910841014,
+  "interpretation": "Post hoc diagnostic after primary benchmark; X masks are not biological deletions or causal validation.",
+  "device": "cuda",
+  "precision": "torch.bfloat16",
+  "batch_size": 8,
+  "baseline_policy": "All effects compared to rerun original at identical precision/batch size; original frozen embeddings were fp32; main benchmark unchanged"
+}
