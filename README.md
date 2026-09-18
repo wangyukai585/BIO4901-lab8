@@ -1,3 +1,9 @@
 # BIO4901 Lab 8
 
-课程项目位于 [project8/](project8/README.md)。本地 MPS 冒烟测试代码、结果与报告已准备；全量训练由用户在 CUDA 服务器运行。
+使用 ESM-2 进行蛋白质亚细胞定位预测，比较固定表征、线性分类、LoRA 和全参数微调。
+
+- [安装与复现说明](project8/README.md)
+- [实验报告](project8/lab8.pdf)
+- [正式实验结果](project8/results/full_run/)
+
+进入 `project8/` 后，按 README 安装环境并运行 Snakemake 工作流。

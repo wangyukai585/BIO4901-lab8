@@ -1,107 +1,18 @@
-BIO4901 Lab 8 — commands actually executed locally, 2026-09-17 Asia/Shanghai
-Workspace: /Users/wangyukai/course/BIO4901/lab8
-This is a curated reproducibility log, not a complete terminal transcript.
+# Reproduction commands (run from project8/)
+conda env create -f environment.yml
+conda activate bio4901-lab8
+python codes/01_download_data.py
+snakemake -s scripts/Snakefile --cores 1 --forceall --config subset=False biological=True device=cuda
+python codes/10_write_course_report.py --results_dir results/full_run
+quarto render lab8.qmd --to pdf
+python -m pytest tests -q
+python scripts/package_submission.py --output ../BIO4901_project8_submission.tgz
 
-1. Hardware and environment
-   uname -m; sw_vers; sysctl -n hw.memsize
-   Result: arm64, macOS 26.6.2, 25769803776 bytes RAM (24 GiB)
-   uv venv --python 3.11 .venv
-   uv pip install --python .venv/bin/python [exact core versions recorded in project8/requirements.txt; Mac skips bitsandbytes]
-   Actual Python 3.11.14, torch 2.6.0, CUDA false, MPS available true.
-   Executed MPS matrix forward/backward and ESM bf16 autocast backward with gradient checkpointing.
-   Evidence: results/mps_precision_check.json, results/esm_mps_precision_check.json
-   uv pip freeze --python .venv/bin/python > project8/requirements-lock-macos.txt
+# Optional: regenerate evaluation and figures from saved predictions/embeddings
+python codes/06_evaluate_and_bootstrap.py --output_dir results/full_run --n_bootstrap 1000
+python codes/07_make_figures.py --output_dir results/full_run --embedding_dir data/embeddings_full
+python codes/09_extra_figures.py --output_dir results/full_run
+python codes/12_plot_biological_controls.py --results_dir results/full_run
 
-2. Data
-   .venv/bin/python project8/codes/01_download_data.py
-   First parser run exposed Cytoplasm-Nucleus and Plastid labels. Implemented explicit exclusion/mapping and reran.
-   Source: https://services.healthtech.dtu.dk/services/DeepLoc-1.0/deeploc_data.fasta
-   SHA-256 and counts are in results/qc/summary.json; original sequences excluded from git.
-
-3. Initial individual stage checks (fp32 MPS)
-   .venv/bin/python project8/codes/02_extract_embeddings.py --subset_size 200 --eval_size 40 --max_length 128 --batch_size 4 --log_steps 10
-   .venv/bin/python project8/codes/03_train_linear_probe.py --subset_size 200 --eval_size 40 --max_length 128 --batch_size 16 --epochs 2 --log_steps 5
-   .venv/bin/python project8/codes/04_train_lora.py --subset_size 200 --eval_size 40 --max_length 128 --batch_size 4 --epochs 2 --effective_batch_size 16 --log_steps 5
-   .venv/bin/python project8/codes/05_train_full_ft.py --subset_size 200 --eval_size 40 --max_length 128 --batch_size 1 --epochs 1 --effective_batch_size 1 --max_steps 1 --log_steps 1
-   Each stage passed. Initial console logs kept separately; current run.json comes from final DAG rerun.
-
-4. Final unified workflow, after numeric/device fixes (MPS bf16 for trainable strategies)
-   cd project8
-   ../.venv/bin/snakemake -s scripts/Snakefile --cores 1 --config subset=True --forceall
-   All 8 jobs passed. Console: results/snakemake_smoke_execution.txt
-   ../.venv/bin/snakemake -s scripts/Snakefile --cores 1 --config subset=False -n
-   Full-mode DAG validated by dry run only; NO full training executed locally.
-   ../.venv/bin/python codes/06_evaluate_and_bootstrap.py
-   ../.venv/bin/python codes/07_make_figures.py
-   Re-executed evaluation/figures after float64 probability normalization to remove CSV-roundoff warnings.
-
-5. Additional checks
-   From workspace root:
-   .venv/bin/python -m pytest project8/tests -q
-   .venv/bin/python project8/codes/05_train_full_ft.py --probe_only --device mps --max_length 128 --batch_size 1 --output_dir project8/results/local_probe
-   .venv/bin/python project8/codes/03_train_linear_probe.py --subset_size 200 --eval_size 40 --max_length 128 --batch_size 16 --epochs 1 --device cpu --output_dir project8/results/cpu_check
-   .venv/bin/python project8/codes/03_train_linear_probe.py --subset_size 200 --eval_size 40 --max_length 128 --batch_size 16 --epochs 2 --device cpu --output_dir project8/results/cpu_check --resume project8/results/cpu_check/last.pt
-   Compared resumed CPU training with independent uninterrupted 2-epoch run by exact equality of checkpoint tensors.
-   CUDA/bitsandbytes kernels unavailable locally. OOM retry tested by injected RuntimeError in unit test; actual CUDA preflight must run on server.
-
-6. Report
-   Downloaded official Quarto 1.7.32 macOS distribution into ignored .tools/quarto (no global installation).
-   .venv/bin/python project8/codes/08_update_report.py
-   .tools/quarto/bin/quarto render project8/lab8.qmd --to pdf
-   Rendered PDF pages with bundled pdftoppm and visually reviewed them.
-   bio4901.sty absent; optional hook reserved, course style not applied.
-
-7. Local git
-   DEVELOPER_DIR=/Library/Developer/CommandLineTools git init
-   Commits grouped by data, training, evaluation and workflow/report modules.
-   No remote configured or pushed. Raw data, weights, tools and environments are ignored.
-
-8. Final cleanup and dependency validation
-   uvx ruff==0.11.8 format project8/codes project8/tests
-   uvx ruff==0.11.8 check project8/codes project8/tests --select F821,F823
-   uv pip compile project8/requirements.txt --python-version 3.11 --python-platform x86_64-unknown-linux-gnu --output-file project8/requirements-lock-linux.txt --quiet
-   Linux resolution succeeded; no claim of Linux installation/CUDA execution.
-   Final smoke DAG completed 8/8 nodes with no warnings/errors; tests 9/9 passed.
-
-9. Authorized server run, 2026-09-17
-   Pushed local main to GitHub after user authorization.
-   Server GitHub HTTP/2 clone failed; transferred a git bundle of the identical pushed commit.
-   Existing SSH key authentication succeeded. No password stored.
-   User requested local network forwarding; stopped initial accelerator attempt and used SSH reverse forwarding to the Mac proxy, loopback binding only.
-   Installed Python 3.11.14 and requirements-lock-linux.txt through the forwarded network.
-   Copied raw data/model cache; SHA-256 matched local originals exactly.
-   Actual hardware: RTX 3080 Ti, advertised 12 GiB (not 3090 Ti).
-   Activated server venv, HF_HUB_OFFLINE=1, HF_HOME pointing to transferred cache.
-   Detached tmux session runs scripts/run_server.sh. Formal run started 2026-09-17 21:59:20 +08:00.
-   CUDA bf16 + AdamW8bit preflight with batch 4 / 512 residues passed; peak 1844.99 MiB.
-   LoRA formal training entered epoch 1/10 and nonzero adapter gradients passed.
-   Results remain pending; do not interpret existing smoke PDF as full experiment output.
-
-10. Full experiment completion, 2026-09-18
-    Server scripts/run_server.sh completed at 01:42:38 +08:00, all 7 full DAG jobs passed.
-    Four FULL_RUN strategies cover identical 2773 official test IDs; all training stages completed 10 epochs.
-    Actual optimizer AdamW8bit, bf16, batch 4, 512 residues; full adaptation without OOM fallback.
-    Downloaded result CSV/JSON/figures and logs via SSH, excluding .pt/.bin/.safetensors.
-    Verified prediction probabilities, ID alignment, coverage, epochs and recomputed accuracy/macro F1.
-    .venv/bin/python -m pytest project8/tests -q : 10 passed
-    Improved formal plot labels and generated concise report with real calibration/cost/CI/class/robustness analysis.
-    .venv/bin/python project8/codes/10_write_course_report.py --results_dir project8/results/full_run
-    .tools/quarto/bin/quarto render project8/lab8.qmd --to pdf
-    Formal PDF rendered and pages visually reviewed with bundled pdftoppm.
-    Earlier chronological smoke/pending entries describe historical stages, not current status.
-
-11. Course requirement audit and report revision, 2026-09-18
-    Read supplied BIO4901 PDF pages 25-28, 31 and 33; audited Lab 8 requirements.
-    Added post-training N-terminal, C-terminal and internal equal-length X-mask controls.
-    Server: HF_HOME=/root/autodl-tmp/hf-cache HF_HUB_OFFLINE=1 python codes/11_biological_controls.py --device cuda
-    All four methods, 2773 test proteins, original + three masks; 536.41 seconds. No retraining or hyperparameter selection.
-    Downloaded all 16 prediction CSVs, class effects and audit metadata before telling user server is no longer needed.
-    Checked matching IDs, probability sums, 120 class effects, original baseline agreement >=99%.
-    .venv/bin/python project8/codes/12_plot_biological_controls.py
-    Rewrote report/template.qmd with standard sections, plain Chinese, required-comparison matrix and appendices.
-    .venv/bin/python project8/codes/10_write_course_report.py
-    .tools/quarto/bin/quarto render project8/lab8.qmd --to pdf
-    Final report: 8 pages, 12 figures, rendered and visually checked.
-    pytest: 11 passed; ruff undefined-name checks passed; full/smoke Snakefile dry runs passed.
-    Added scripts/package_submission.py using git archive; only project8 tracked files, no raw data or weights.
-    bio4901.sty not supplied; optional hook retained, custom report layout used.
+# Optional: small pipeline check
+snakemake -s scripts/Snakefile --cores 1 --config subset=True

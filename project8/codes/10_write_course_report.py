@@ -27,8 +27,6 @@ def main():
         ["strategy", "category", "condition"]
     )
     f, l, o = (table.loc[s] for s in ["full", "linear", "lora"])
-    ci = pd.read_csv(r / "bootstrap_ci.csv")
-    pair = ci[(ci.comparison == "lora - full") & (ci.metric == "macro_f1")].iloc[0]
     names = dict(frozen="Frozen + kNN", linear="Linear", lora="LoRA", full="Full FT")
     rows = [
         "| 方法 | Accuracy | Macro F1 | 更新参数 | 时间/min | 显存/GiB |",
@@ -47,9 +45,7 @@ def main():
         "METRICS": "\n".join(rows),
         "PERFORMANCE": f"**Full FT 的 Macro F1 最高，为 {f.macro_f1:.3f}；Linear 是低成本基线。** Full FT 的准确率为 {f.accuracy:.1%}，Linear 为 {l.accuracy:.1%}。参数调整带来了改善，但这只是固定设置、一次训练的比较，并非各方法的最优成绩。",
         "COST": f"LoRA 的更新参数只有 Full FT 的 {100 * o.trainable_parameters / f.trainable_parameters:.2f}%，显存约一半，但耗时同为约 107 分钟。因为它仍需通过编码器计算梯度。Linear 连同表征提取仅需 {l.total_seconds / 60:.1f} 分钟。",
-        "CI": f"Full FT 比 LoRA 的 Macro F1 高 {f.macro_f1 - o.macro_f1:.3f}，95% 区间为 [{-pair.ci_high:.3f}, {-pair.ci_low:.3f}]，未跨零。Linear 与 LoRA 的 Macro F1 差异区间跨零，不能据此认定两者有稳定差距。",
         "BIOLOGY": biological,
-        "CALIBRATION": f"Linear 的校准误差 ECE 最低（{l.ece:.3f}）；LoRA 与 Full FT 分别为 {o.ece:.3f}、{f.ece:.3f}。**Full FT 更准确，但往往过于自信。** 本实验没有用测试集调整置信度。若要据此筛选可靠预测，还需要独立数据做校准。",
     }
     text = (ROOT / "report/template.qmd").read_text()
     for key, value in values.items():

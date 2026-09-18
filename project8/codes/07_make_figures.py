@@ -208,8 +208,8 @@ def main():
         "linear": (6.3, 3.9, 1.6, 0.65, "Linear probe"),
         "lora": (6.3, 2.4, 1.6, 0.65, "ESM-2 + LoRA"),
         "full": (6.3, 0.9, 1.6, 0.65, "Full fine-tuning"),
-        "eval": (8.5, 2.5, 1.5, 0.8, "Heldout metrics\nCalibration"),
-        "stats": (10.4, 2.5, 1.5, 0.8, "Paired bootstrap\nRobustness"),
+        "eval": (8.5, 2.5, 1.5, 0.8, "Heldout metrics\nCompute cost"),
+        "stats": (10.4, 2.5, 1.5, 0.8, "Class analysis\nMasking controls"),
     }
     for i, (key, (x, y, w, h, text)) in enumerate(boxes.items()):
         ax.add_patch(
