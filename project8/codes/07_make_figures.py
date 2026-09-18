@@ -163,15 +163,18 @@ def main():
             ax=ax,
             cbar=s == "full",
             cbar_kws={"label": "Row fraction"},
-            annot_kws={"size": 8},
+            annot_kws={"size": 11},
         )
         ax.set(
             title=NAMES[s] + " (counts; row-normalized color)",
             xlabel="Predicted class",
             ylabel="True class",
         )
-        ax.tick_params(axis="y", rotation=0)
-        ax.tick_params(axis="x", rotation=45)
+        ax.title.set_fontsize(15)
+        ax.xaxis.label.set_size(13)
+        ax.yaxis.label.set_size(13)
+        ax.tick_params(axis="y", rotation=0, labelsize=11)
+        ax.tick_params(axis="x", rotation=45, labelsize=11)
     save(fig, "fig4_confusion_matrices")
     emb = np.load(a.embedding_dir / "embeddings.npz")
     pca = PCA(n_components=2, svd_solver="full", random_state=42).fit(

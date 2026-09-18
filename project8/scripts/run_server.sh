@@ -15,5 +15,4 @@ print(json.dumps(info,indent=2)); Path('results/full_run/server_environment.json
 PY
 python codes/05_train_full_ft.py --device cuda --probe_only --batch_size 4 --effective_batch_size 16 --max_length 512 --output_dir results/server_probe
 snakemake -s scripts/Snakefile --cores 1 --config subset=False device=cuda --rerun-incomplete
-python codes/09_extra_figures.py --output_dir results/full_run
 printf 'COMPLETED %s\n' "$(date -Iseconds)" > results/full_run/STATUS

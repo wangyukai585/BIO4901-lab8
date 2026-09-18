@@ -6,6 +6,11 @@ workdir: str(ROOT)
 SMOKE = str(config.get('subset','True')).lower() in ('true','1','yes')
 OUT = str(config.get('output_dir','results' if SMOKE else 'results/full_run'))
 EMB = str(config.get('embedding_dir','data/embeddings' if SMOKE else 'data/embeddings_full'))
+BIOLOGY = str(config.get('biological','False' if SMOKE else 'True')).lower() in ('true','1','yes')
+if BIOLOGY and SMOKE:
+    raise ValueError('Biological controls require subset=False and full checkpoints')
+BIO_TARGETS = [f'{OUT}/biological_controls/audit.json', f'{OUT}/images/fig11_biological_controls.pdf'] if BIOLOGY else []
+DEVICE = str(config.get('device','auto'))
 PYTHON = sys.executable
 COMMON = '--subset_size 200 --eval_size 40 --max_length 128' if SMOKE else '--max_length 512'
 COMMON += ' --device ' + str(config.get('device','auto'))
@@ -14,6 +19,8 @@ FT = '--batch_size 1 --effective_batch_size 1 --max_steps 1 --epochs 1' if SMOKE
 
 rule all:
     input:
+        BIO_TARGETS,
+        expand(f'{OUT}/images/{{name}}.pdf',name=['fig8_class_f1','fig9_robustness','fig10_paired_intervals']),
         f'{OUT}/metrics_table.csv', f'{OUT}/bootstrap_ci.csv',
         expand(f'{OUT}/images/{{name}}.pdf',name=['fig1_parameter_efficiency','fig2_performance_cost','fig3_calibration','fig4_confusion_matrices','fig5_embedding_pca','fig6_workflow','fig7_training_curves'])
 
@@ -28,18 +35,18 @@ rule frozen:
 
 rule linear:
     input: f'{EMB}/embeddings.npz',f'{EMB}/metadata.json'
-    output: f'{OUT}/linear/predictions.csv',f'{OUT}/linear/robust_predictions.csv',f'{OUT}/linear/run.json',f'{OUT}/linear/history.csv'
+    output: f'{OUT}/linear/predictions.csv',f'{OUT}/linear/robust_predictions.csv',f'{OUT}/linear/run.json',f'{OUT}/linear/history.csv',f'{OUT}/linear/last.pt'
     shell: '{PYTHON} codes/03_train_linear_probe.py {COMMON} --epochs {EPOCHS} --batch_size 16 --embedding_dir {EMB} --output_dir {OUT}/linear'
 
 rule lora:
     input: 'data/raw/deeploc_data.fasta'
-    output: f'{OUT}/lora/predictions.csv',f'{OUT}/lora/robust_predictions.csv',f'{OUT}/lora/run.json',f'{OUT}/lora/history.csv'
+    output: f'{OUT}/lora/predictions.csv',f'{OUT}/lora/robust_predictions.csv',f'{OUT}/lora/run.json',f'{OUT}/lora/history.csv',f'{OUT}/lora/last.pt'
     resources: gpu=1
     shell: '{PYTHON} codes/04_train_lora.py {COMMON} --epochs {EPOCHS} --batch_size 4 --effective_batch_size 16 --output_dir {OUT}/lora'
 
 rule full:
     input: 'data/raw/deeploc_data.fasta'
-    output: f'{OUT}/full/predictions.csv',f'{OUT}/full/robust_predictions.csv',f'{OUT}/full/run.json',f'{OUT}/full/history.csv'
+    output: f'{OUT}/full/predictions.csv',f'{OUT}/full/robust_predictions.csv',f'{OUT}/full/run.json',f'{OUT}/full/history.csv',f'{OUT}/full/last.pt'
     resources: gpu=1
     shell: '{PYTHON} codes/05_train_full_ft.py {COMMON} {FT} --output_dir {OUT}/full'
 
@@ -48,10 +55,32 @@ rule evaluate:
         expand(f'{OUT}/{{stage}}/predictions.csv',stage=['frozen','linear','lora','full']),
         expand(f'{OUT}/{{stage}}/robust_predictions.csv',stage=['frozen','linear','lora','full']),
         expand(f'{OUT}/{{stage}}/run.json',stage=['frozen','linear','lora','full'])
-    output: f'{OUT}/metrics_table.csv',f'{OUT}/bootstrap_ci.csv'
+    output:
+        f'{OUT}/metrics_table.csv', f'{OUT}/bootstrap_ci.csv', f'{OUT}/robustness_by_group.csv', f'{OUT}/evaluation_summary.json',
+        expand(f'{OUT}/{{stage}}/calibration.csv',stage=['frozen','linear','lora','full']),
+        expand(f'{OUT}/{{stage}}/confusion_matrix.csv',stage=['frozen','linear','lora','full'])
     shell: '{PYTHON} codes/06_evaluate_and_bootstrap.py --output_dir {OUT} --n_bootstrap 1000'
 
 rule figures:
     input: f'{OUT}/metrics_table.csv',f'{OUT}/bootstrap_ci.csv',f'{EMB}/embeddings.npz',expand(f'{OUT}/{{stage}}/history.csv',stage=['linear','lora','full'])
     output: expand(f'{OUT}/images/{{name}}.pdf',name=['fig1_parameter_efficiency','fig2_performance_cost','fig3_calibration','fig4_confusion_matrices','fig5_embedding_pca','fig6_workflow','fig7_training_curves'])
     shell: '{PYTHON} codes/07_make_figures.py --output_dir {OUT} --embedding_dir {EMB}'
+
+rule extra_figures:
+    input: f'{OUT}/metrics_table.csv', f'{OUT}/bootstrap_ci.csv', f'{OUT}/robustness_by_group.csv', expand(f'{OUT}/{{stage}}/confusion_matrix.csv',stage=['frozen','linear','lora','full'])
+    output: expand(f'{OUT}/images/{{name}}.pdf',name=['fig8_class_f1','fig9_robustness','fig10_paired_intervals'])
+    shell: '{PYTHON} codes/09_extra_figures.py --output_dir {OUT}'
+
+rule biological_controls:
+    input:
+        'data/raw/deeploc_data.fasta', f'{EMB}/embeddings.npz',
+        expand(f'{OUT}/{{stage}}/last.pt',stage=['linear','lora','full']),
+        expand(f'{OUT}/{{stage}}/run.json',stage=['frozen','linear','lora','full']),
+        expand(f'{OUT}/{{stage}}/predictions.csv',stage=['frozen','linear','lora','full'])
+    output: f'{OUT}/biological_controls/class_effects.csv', f'{OUT}/biological_controls/audit.json'
+    shell: '{PYTHON} codes/11_biological_controls.py --results_dir {OUT} --embedding_dir {EMB} --device {DEVICE}'
+
+rule biological_plot:
+    input: f'{OUT}/biological_controls/class_effects.csv', f'{OUT}/biological_controls/audit.json'
+    output: f'{OUT}/images/fig11_biological_controls.pdf'
+    shell: '{PYTHON} codes/12_plot_biological_controls.py --results_dir {OUT}'

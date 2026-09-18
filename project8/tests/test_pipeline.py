@@ -180,3 +180,23 @@ def test_formal_report_refuses_smoke_results():
     assert result.returncode != 0
     assert "completed full-data runs" in result.stderr
     assert (ROOT / "lab8.qmd").read_bytes() == before
+
+
+def test_matched_masking_preserves_length_and_termini():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "bio_controls", ROOT / "codes/11_biological_controls.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    seq = "A" * 700
+    original = mod.masked(seq, "original")
+    assert len(original) == 512
+    for condition in ["N10", "C10", "internal10"]:
+        changed = mod.masked(seq, condition)
+        assert len(changed) == 512 and changed.count("X") == 10
+    internal = mod.masked(seq, "internal10")
+    assert internal[:10] == original[:10] and internal[-10:] == original[-10:]
+    assert mod.masked("ACDE", "N10") == "XCDE"
+    assert mod.masked("ACDE", "C10") == "ACDX"
